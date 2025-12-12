@@ -192,14 +192,26 @@ async function updateTeamSubscription(teamId: string, subscription: Stripe.Subsc
   const planId = subscription.metadata?.planId;
   const plan = planId ? PLANS[planId as PlanId] : null;
 
+  // Get subscription data with proper typing
+  const subData = subscription as unknown as {
+    current_period_end?: number;
+    cancel_at_period_end?: boolean;
+  };
+
   // Get current period end from subscription
-  const currentPeriodEnd = "current_period_end" in subscription
-    ? new Date((subscription as unknown as { current_period_end: number }).current_period_end * 1000)
+  const currentPeriodEnd = subData.current_period_end
+    ? new Date(subData.current_period_end * 1000)
     : null;
+
+  // Determine subscription status - check if canceling at period end
+  let subscriptionStatus = subscription.status;
+  if (subData.cancel_at_period_end && subscription.status === "active") {
+    subscriptionStatus = "canceling";
+  }
 
   const updateData: Record<string, unknown> = {
     stripeSubscriptionId: subscription.id,
-    subscriptionStatus: subscription.status,
+    subscriptionStatus,
     ...(currentPeriodEnd && { currentPeriodEnd }),
   };
 
@@ -215,8 +227,11 @@ async function updateTeamSubscription(teamId: string, subscription: Stripe.Subsc
 
   console.log("[Stripe Webhook] Team subscription updated:", {
     teamId,
-    status: subscription.status,
+    stripeStatus: subscription.status,
+    ourStatus: subscriptionStatus,
+    cancelAtPeriodEnd: subData.cancel_at_period_end,
     planId,
+    currentPeriodEnd,
   });
 }
 
