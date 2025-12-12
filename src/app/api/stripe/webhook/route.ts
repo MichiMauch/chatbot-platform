@@ -123,27 +123,30 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   if (session.subscription && stripe) {
     try {
       const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
-      console.log("[Stripe Webhook] Subscription data:", JSON.stringify(subscription, null, 2));
 
-      // Try multiple ways to get the period end
-      const subAny = subscription as unknown as Record<string, unknown>;
-      const periodEnd = subAny.current_period_end || subAny.currentPeriodEnd;
+      // Get period end from items (new Stripe API structure)
+      const subData = subscription as unknown as {
+        current_period_end?: number;
+        items?: {
+          data?: Array<{
+            current_period_end?: number;
+          }>;
+        };
+      };
 
-      if (typeof periodEnd === "number") {
-        currentPeriodEnd = new Date(periodEnd * 1000);
-      } else if (periodEnd instanceof Date) {
-        currentPeriodEnd = periodEnd;
+      let periodEndTimestamp = subData.current_period_end;
+      if (!periodEndTimestamp && subData.items?.data?.[0]?.current_period_end) {
+        periodEndTimestamp = subData.items.data[0].current_period_end;
+      }
+
+      if (periodEndTimestamp) {
+        currentPeriodEnd = new Date(periodEndTimestamp * 1000);
       }
 
       console.log("[Stripe Webhook] Extracted currentPeriodEnd:", currentPeriodEnd);
     } catch (err) {
       console.error("[Stripe Webhook] Failed to fetch subscription:", err);
     }
-  } else {
-    console.log("[Stripe Webhook] No subscription ID or stripe not configured:", {
-      hasSubscription: !!session.subscription,
-      hasStripe: !!stripe,
-    });
   }
 
   // Update team with subscription info
@@ -192,15 +195,26 @@ async function updateTeamSubscription(teamId: string, subscription: Stripe.Subsc
   const planId = subscription.metadata?.planId;
   const plan = planId ? PLANS[planId as PlanId] : null;
 
-  // Get subscription data with proper typing
+  // Get subscription data with proper typing for new Stripe API
   const subData = subscription as unknown as {
     current_period_end?: number;
     cancel_at_period_end?: boolean;
+    items?: {
+      data?: Array<{
+        current_period_end?: number;
+        current_period_start?: number;
+      }>;
+    };
   };
 
-  // Get current period end from subscription
-  const currentPeriodEnd = subData.current_period_end
-    ? new Date(subData.current_period_end * 1000)
+  // Get current period end - check both locations (new API has it in items)
+  let periodEndTimestamp = subData.current_period_end;
+  if (!periodEndTimestamp && subData.items?.data?.[0]?.current_period_end) {
+    periodEndTimestamp = subData.items.data[0].current_period_end;
+  }
+
+  const currentPeriodEnd = periodEndTimestamp
+    ? new Date(periodEndTimestamp * 1000)
     : null;
 
   // Determine subscription status - check if canceling at period end
