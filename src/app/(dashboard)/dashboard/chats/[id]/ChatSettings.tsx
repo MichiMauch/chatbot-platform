@@ -54,7 +54,12 @@ export function ChatSettings({ chat, allowPublicChats = true }: ChatSettingsProp
       return [];
     }
   });
-  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(() => {
+    const match = systemInstructionTemplates.find(
+      (t) => t.instruction === chat.systemInstruction
+    );
+    return match?.id ?? null;
+  });
 
   const handleSave = async () => {
     setIsSaving(true);
