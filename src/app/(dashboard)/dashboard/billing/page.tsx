@@ -139,46 +139,61 @@ export default async function BillingPage() {
             </div>
             {currentPlan !== "free" && (
               <>
-                {data?.team?.currentPeriodEnd && (
-                  <div className="space-y-1">
-                    <p className="text-sm text-gray-500">
-                      Letzte Abrechnung: {(() => {
-                        const lastBilling = new Date(data.team.currentPeriodEnd);
-                        lastBilling.setMonth(lastBilling.getMonth() - 1);
-                        return lastBilling.toLocaleDateString("de-CH");
-                      })()}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      Nächste Abrechnung: {new Date(data.team.currentPeriodEnd).toLocaleDateString("de-CH")}
-                    </p>
+                {/* Status Badge */}
+                {data?.team?.subscriptionStatus && (
+                  <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                    data.team.subscriptionStatus === "active"
+                      ? "bg-green-100 text-green-700"
+                      : data.team.subscriptionStatus === "past_due"
+                      ? "bg-red-100 text-red-700"
+                      : data.team.subscriptionStatus === "canceling"
+                      ? "bg-amber-100 text-amber-700"
+                      : "bg-gray-100 text-gray-700"
+                  }`}>
+                    {data.team.subscriptionStatus === "active" ? "Aktiv" :
+                     data.team.subscriptionStatus === "past_due" ? "Zahlung ausstehend" :
+                     data.team.subscriptionStatus === "canceled" ? "Gekündigt" :
+                     data.team.subscriptionStatus === "canceling" ? "Wird gekündigt" :
+                     data.team.subscriptionStatus}
                   </div>
                 )}
-                {data?.team?.subscriptionStatus && (
-                  <p className="text-sm text-gray-500">
-                    Status: <span className={`font-medium ${
-                      data.team.subscriptionStatus === "active"
-                        ? "text-green-600"
-                        : data.team.subscriptionStatus === "past_due"
-                        ? "text-red-600"
-                        : data.team.subscriptionStatus === "canceling"
-                        ? "text-amber-600"
-                        : "text-gray-600"
-                    }`}>
-                      {data.team.subscriptionStatus === "active" ? "Aktiv" :
-                       data.team.subscriptionStatus === "past_due" ? "Zahlung ausstehend" :
-                       data.team.subscriptionStatus === "canceled" ? "Gekündigt" :
-                       data.team.subscriptionStatus === "canceling" ? "Wird gekündigt" :
-                       data.team.subscriptionStatus}
-                    </span>
-                  </p>
+
+                {/* Billing Dates */}
+                {data?.team?.currentPeriodEnd ? (
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-500">Letzte Abrechnung</span>
+                      <p className="font-medium text-gray-900">
+                        {(() => {
+                          const lastBilling = new Date(data.team.currentPeriodEnd);
+                          lastBilling.setMonth(lastBilling.getMonth() - 1);
+                          return lastBilling.toLocaleDateString("de-CH");
+                        })()}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">
+                        {data.team.subscriptionStatus === "canceling" ? "Läuft bis" : "Nächste Abrechnung"}
+                      </span>
+                      <p className="font-medium text-gray-900">
+                        {new Date(data.team.currentPeriodEnd).toLocaleDateString("de-CH")}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">Abrechnungsdaten werden geladen...</p>
                 )}
-                <div className="flex flex-wrap gap-2">
+
+                {/* Action Buttons */}
+                <div className="flex flex-wrap gap-2 pt-2">
                   <BillingPortalButton hasSubscription={!!data?.team?.stripeSubscriptionId} />
-                  <CancelSubscriptionButton
-                    hasSubscription={!!data?.team?.stripeSubscriptionId}
-                    currentPeriodEnd={data?.team?.currentPeriodEnd ?? null}
-                    isCanceling={data?.team?.subscriptionStatus === "canceling"}
-                  />
+                  {data?.team?.subscriptionStatus !== "canceling" && (
+                    <CancelSubscriptionButton
+                      hasSubscription={!!data?.team?.stripeSubscriptionId}
+                      currentPeriodEnd={data?.team?.currentPeriodEnd ?? null}
+                      isCanceling={false}
+                    />
+                  )}
                 </div>
               </>
             )}
