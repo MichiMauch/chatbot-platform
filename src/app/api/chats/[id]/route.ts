@@ -175,6 +175,7 @@ export async function PATCH(
       isPublic,
       allowAnonymous,
       uploadType,
+      starterQuestions,
     } = body;
 
     // Check plan limits for public chats
@@ -211,6 +212,7 @@ export async function PATCH(
     if (isPublic !== undefined) updateData.isPublic = isPublic;
     if (allowAnonymous !== undefined) updateData.allowAnonymous = allowAnonymous;
     if (uploadType !== undefined) updateData.uploadType = uploadType;
+    if (starterQuestions !== undefined) updateData.starterQuestions = starterQuestions;
 
     // Immer updatedAt aktualisieren
     await withRetry(() =>

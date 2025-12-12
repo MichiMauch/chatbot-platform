@@ -44,6 +44,7 @@ interface Chat {
   isPublic: boolean;
   files?: string; // JSON string of FileMetadata[]
   scrapedPages?: ScrapedPageData[];
+  starterQuestions?: string[];
 }
 
 interface ChatInterfaceProps {
@@ -170,10 +171,10 @@ export default function ChatInterface({ chat }: ChatInterfaceProps) {
     }
   }, [messages]);
 
-  // Load messages from localStorage
+  // Load messages from sessionStorage (cleared when browser closes)
   useEffect(() => {
     const storageKey = `chat-messages-${chat.id}`;
-    const stored = localStorage.getItem(storageKey);
+    const stored = sessionStorage.getItem(storageKey);
     if (stored) {
       try {
         // Mark all loaded messages as not new (no animation)
@@ -188,13 +189,13 @@ export default function ChatInterface({ chat }: ChatInterfaceProps) {
     }
   }, [chat.id]);
 
-  // Save messages to localStorage
+  // Save messages to sessionStorage (cleared when browser closes)
   useEffect(() => {
     if (messages.length > 0) {
       const storageKey = `chat-messages-${chat.id}`;
       // Don't save isNew flag
       const messagesToSave = messages.map(({ isNew, ...msg }) => msg);
-      localStorage.setItem(storageKey, JSON.stringify(messagesToSave));
+      sessionStorage.setItem(storageKey, JSON.stringify(messagesToSave));
     }
   }, [messages, chat.id]);
 
@@ -375,6 +376,28 @@ export default function ChatInterface({ chat }: ChatInterfaceProps) {
               <p className="text-sm text-gray-500 mt-2">
                 Stelle eine Frage, um zu beginnen.
               </p>
+
+              {/* Starter Questions */}
+              {chat.starterQuestions && chat.starterQuestions.length > 0 && (
+                <div className="mt-6 space-y-2 max-w-md mx-auto">
+                  {chat.starterQuestions.map((question, index) => (
+                    <button
+                      key={index}
+                      onClick={() => {
+                        setInput(question);
+                        // Auto-submit the question
+                        setTimeout(() => {
+                          const form = document.querySelector("form");
+                          if (form) form.requestSubmit();
+                        }, 100);
+                      }}
+                      className="w-full px-4 py-3 text-left text-sm text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
+                    >
+                      {question}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           ) : null}
 

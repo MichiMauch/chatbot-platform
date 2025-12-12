@@ -1,8 +1,8 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { CreditCard, Check, Zap } from "lucide-react";
+import Link from "next/link";
+import { CreditCard, Sparkles } from "lucide-react";
 import { PLANS, formatPrice } from "@/lib/stripe";
-import { PlanUpgradeButton } from "./PlanUpgradeButton";
 import { BillingPortalButton } from "./BillingPortalButton";
 import { CancelSubscriptionButton } from "./CancelSubscriptionButton";
 import { db } from "@/lib/db";
@@ -225,22 +225,30 @@ export default async function BillingPage() {
         </div>
       </div>
 
-      {/* Pricing Plans */}
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Verfügbare Pläne
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {Object.values(PLANS).map((plan) => (
-            <PricingCard
-              key={plan.id}
-              plan={plan}
-              isCurrentPlan={currentPlan === plan.id}
-              currentPlan={currentPlan}
-            />
-          ))}
+      {/* Upgrade Link for Free Users */}
+      {currentPlan === "free" && (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full">
+                <Sparkles className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Mehr Funktionen freischalten</h3>
+                <p className="text-sm text-gray-600">
+                  Upgrade auf einen bezahlten Plan für mehr Chatbots, Nachrichten und Speicher
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/dashboard/upgrade"
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Pläne ansehen
+            </Link>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Invoices */}
       <div className="bg-white rounded-xl border border-gray-200">
@@ -290,73 +298,3 @@ function UsageBar({
   );
 }
 
-function PricingCard({
-  plan,
-  isCurrentPlan,
-  currentPlan,
-}: {
-  plan: (typeof PLANS)[keyof typeof PLANS];
-  isCurrentPlan: boolean;
-  currentPlan: string;
-}) {
-  const isPopular = plan.id === "pro";
-  const isDowngrade = plan.priceMonthly === 0;
-  const requiresContact = "requiresContact" in plan && plan.requiresContact === true;
-
-  return (
-    <div
-      className={`relative bg-white rounded-xl border p-6 ${
-        isPopular
-          ? "border-blue-500 ring-2 ring-blue-500"
-          : "border-gray-200"
-      }`}
-    >
-      {isPopular && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <span className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-blue-500 text-white">
-            <Zap className="w-3 h-3 mr-1" />
-            Beliebt
-          </span>
-        </div>
-      )}
-
-      <div className="text-center mb-4">
-        <h3 className="text-lg font-bold text-gray-900">{plan.name}</h3>
-        <p className="text-sm text-gray-500 mt-1">{plan.description}</p>
-      </div>
-
-      <div className="text-center mb-6">
-        <span className="text-3xl font-bold text-gray-900">
-          {plan.priceMonthly === 0 ? "Gratis" : (
-            <>
-              {requiresContact && <span className="text-lg font-normal">Ab </span>}
-              {formatPrice(plan.priceMonthly)}
-            </>
-          )}
-        </span>
-        {plan.priceMonthly > 0 && (
-          <span className="text-gray-500 text-sm"> / Monat</span>
-        )}
-      </div>
-
-      <ul className="space-y-3 mb-6">
-        {plan.features.map((feature, index) => (
-          <li key={index} className="flex items-start text-sm">
-            <Check className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-            <span className="text-gray-600">{feature}</span>
-          </li>
-        ))}
-      </ul>
-
-      <PlanUpgradeButton
-        planId={plan.id}
-        planName={plan.name}
-        isCurrentPlan={isCurrentPlan}
-        currentPlan={currentPlan}
-        isDowngrade={isDowngrade}
-        isPopular={isPopular}
-        requiresContact={requiresContact}
-      />
-    </div>
-  );
-}

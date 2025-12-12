@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, Check, TrendingUp } from "lucide-react";
+import { Save, Check, TrendingUp, Plus, X, MessageCircleQuestion } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +21,7 @@ interface Chat {
   systemInstruction: string | null;
   isPublic: boolean | null;
   allowAnonymous: boolean | null;
+  starterQuestions: string | null;
 }
 
 interface ChatSettingsProps {
@@ -44,6 +45,16 @@ export function ChatSettings({ chat, allowPublicChats = true }: ChatSettingsProp
   const [allowAnonymous, setAllowAnonymous] = useState(
     chat.allowAnonymous ?? true
   );
+  const [starterQuestions, setStarterQuestions] = useState<string[]>(() => {
+    if (!chat.starterQuestions) return [];
+    try {
+      const parsed = JSON.parse(chat.starterQuestions);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -58,6 +69,9 @@ export function ChatSettings({ chat, allowPublicChats = true }: ChatSettingsProp
           systemInstruction,
           isPublic,
           allowAnonymous,
+          starterQuestions: starterQuestions.filter(q => q.trim()).length > 0
+            ? JSON.stringify(starterQuestions.filter(q => q.trim()))
+            : null,
         }),
       });
 
@@ -80,7 +94,24 @@ export function ChatSettings({ chat, allowPublicChats = true }: ChatSettingsProp
     const template = systemInstructionTemplates.find((t) => t.id === templateId);
     if (template) {
       setSystemInstruction(template.instruction);
+      setSelectedTemplate(templateId);
     }
+  };
+
+  const addStarterQuestion = () => {
+    if (starterQuestions.length < 4) {
+      setStarterQuestions([...starterQuestions, ""]);
+    }
+  };
+
+  const updateStarterQuestion = (index: number, value: string) => {
+    const updated = [...starterQuestions];
+    updated[index] = value;
+    setStarterQuestions(updated);
+  };
+
+  const removeStarterQuestion = (index: number) => {
+    setStarterQuestions(starterQuestions.filter((_, i) => i !== index));
   };
 
   return (
@@ -155,7 +186,11 @@ export function ChatSettings({ chat, allowPublicChats = true }: ChatSettingsProp
               <button
                 key={template.id}
                 onClick={() => applyTemplate(template.id)}
-                className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-colors"
+                className={`px-3 py-1.5 text-sm rounded-lg border transition-all ${
+                  selectedTemplate === template.id
+                    ? "bg-blue-50 border-blue-500 text-blue-700 ring-2 ring-blue-500"
+                    : "border-gray-200 hover:bg-gray-50 hover:border-gray-300"
+                }`}
               >
                 {template.name}
               </button>
@@ -171,6 +206,57 @@ export function ChatSettings({ chat, allowPublicChats = true }: ChatSettingsProp
           rows={5}
           className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono text-sm"
         />
+      </section>
+
+      {/* Startfragen */}
+      <section className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="flex items-center space-x-2 mb-4">
+          <MessageCircleQuestion className="w-5 h-5 text-gray-400" />
+          <h2 className="text-lg font-semibold text-gray-900">
+            Startfragen
+          </h2>
+        </div>
+        <p className="text-sm text-gray-500 mb-4">
+          Diese Fragen werden angezeigt, wenn der Chat geöffnet wird. Benutzer können darauf klicken, um schnell loszulegen.
+        </p>
+
+        <div className="space-y-3">
+          {starterQuestions.map((question, index) => (
+            <div key={index} className="flex items-center gap-2">
+              <input
+                type="text"
+                value={question}
+                onChange={(e) => updateStarterQuestion(index, e.target.value)}
+                placeholder={`Frage ${index + 1}, z.B. "Was sind eure Öffnungszeiten?"`}
+                className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+              <button
+                type="button"
+                onClick={() => removeStarterQuestion(index)}
+                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {starterQuestions.length < 4 && (
+          <button
+            type="button"
+            onClick={addStarterQuestion}
+            className="mt-3 inline-flex items-center px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <Plus className="w-4 h-4 mr-1.5" />
+            Frage hinzufügen
+          </button>
+        )}
+
+        {starterQuestions.length >= 4 && (
+          <p className="mt-3 text-sm text-gray-500">
+            Maximal 4 Startfragen möglich
+          </p>
+        )}
       </section>
 
       {/* Zugriff */}

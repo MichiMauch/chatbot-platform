@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { Loader2, AlertCircle, ArrowLeft } from "lucide-react";
+import { Loader2, AlertCircle, ArrowLeft, Eye, Sparkles } from "lucide-react";
 import Link from "next/link";
 import ChatInterface from "@/components/chat/ChatInterface";
 
@@ -16,6 +16,7 @@ interface Chat {
   systemInstruction: string | null;
   isPublic: boolean;
   files?: string;
+  starterQuestions?: string[];
 }
 
 export default function PublicChatPage() {
@@ -25,6 +26,7 @@ export default function PublicChatPage() {
   const [chat, setChat] = useState<Chat | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isPreview, setIsPreview] = useState(false);
 
   useEffect(() => {
     async function loadChat() {
@@ -43,6 +45,7 @@ export default function PublicChatPage() {
 
         const data = await response.json();
         setChat(data.chat);
+        setIsPreview(data.isPreview || false);
         setLoading(false);
       } catch (err) {
         console.error("Error loading chat:", err);
@@ -90,6 +93,31 @@ export default function PublicChatPage() {
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
+      {/* Preview Banner */}
+      {isPreview && (
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-3">
+          <div className="max-w-4xl mx-auto flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Eye className="w-5 h-5 text-amber-600" />
+              <div>
+                <p className="text-sm font-medium text-amber-800">
+                  Vorschau-Modus
+                </p>
+                <p className="text-xs text-amber-600">
+                  Dieser Chat ist nur für dich sichtbar. Externe Besucher haben keinen Zugang.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/dashboard/upgrade"
+              className="inline-flex items-center px-3 py-1.5 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors"
+            >
+              <Sparkles className="w-4 h-4 mr-1.5" />
+              Upgrade
+            </Link>
+          </div>
+        </div>
+      )}
       <ChatInterface chat={chat} />
     </div>
   );

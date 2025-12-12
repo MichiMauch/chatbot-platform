@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { chats, scrapedPages } from "@/lib/schema";
-import { eq } from "drizzle-orm";
+import { chats, scrapedPages, teamMembers } from "@/lib/schema";
+import { eq, and } from "drizzle-orm";
+import { auth } from "@/lib/auth";
 
 export async function GET(
   request: NextRequest,
@@ -21,12 +22,36 @@ export async function GET(
       );
     }
 
-    // Only return public chats
+    // Check access permissions
+    let isPreview = false;
+
     if (!chat.isPublic) {
-      return NextResponse.json(
-        { error: "Dieser Chat ist nicht öffentlich" },
-        { status: 403 }
-      );
+      // Check if user is logged in and is a team member
+      const session = await auth();
+
+      if (session?.user) {
+        const membership = await db.query.teamMembers.findFirst({
+          where: and(
+            eq(teamMembers.userId, session.user.id),
+            eq(teamMembers.teamId, chat.teamId)
+          ),
+        });
+
+        if (membership) {
+          // User is team member - allow preview
+          isPreview = true;
+        } else {
+          return NextResponse.json(
+            { error: "Dieser Chat ist nicht öffentlich" },
+            { status: 403 }
+          );
+        }
+      } else {
+        return NextResponse.json(
+          { error: "Dieser Chat ist nicht öffentlich" },
+          { status: 403 }
+        );
+      }
     }
 
     // Load scraped pages for this chat
@@ -45,6 +70,15 @@ export async function GET(
         systemInstruction: chat.systemInstruction,
         isPublic: chat.isPublic,
         files: chat.files,
+        starterQuestions: (() => {
+          if (!chat.starterQuestions) return [];
+          try {
+            const parsed = JSON.parse(chat.starterQuestions);
+            return Array.isArray(parsed) ? parsed : [];
+          } catch {
+            return [];
+          }
+        })(),
         scrapedPages: scrapedPagesData.map((p) => ({
           title: p.title,
           displayName: p.displayName,
@@ -52,6 +86,7 @@ export async function GET(
           url: p.url,
         })),
       },
+      isPreview,
     });
   } catch (error) {
     console.error("Error loading chat:", error);

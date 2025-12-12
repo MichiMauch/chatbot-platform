@@ -152,6 +152,7 @@ export const chats = sqliteTable("chats", {
   // Settings
   isPublic: integer("is_public", { mode: "boolean" }).default(true),
   allowAnonymous: integer("allow_anonymous", { mode: "boolean" }).default(true),
+  starterQuestions: text("starter_questions"), // JSON array, max 4
 
   // Metadata
   files: text("files"), // JSON array
