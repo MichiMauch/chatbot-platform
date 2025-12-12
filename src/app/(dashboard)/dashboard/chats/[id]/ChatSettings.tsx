@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, Check, TrendingUp, Plus, X, MessageCircleQuestion } from "lucide-react";
+import { Save, Check, TrendingUp, Plus, X, MessageCircleQuestion, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,7 @@ interface Chat {
   isPublic: boolean | null;
   allowAnonymous: boolean | null;
   starterQuestions: string | null;
+  welcomeMessage: string | null;
 }
 
 interface ChatSettingsProps {
@@ -60,6 +61,7 @@ export function ChatSettings({ chat, allowPublicChats = true }: ChatSettingsProp
     );
     return match?.id ?? null;
   });
+  const [welcomeMessage, setWelcomeMessage] = useState(chat.welcomeMessage || "");
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -77,6 +79,7 @@ export function ChatSettings({ chat, allowPublicChats = true }: ChatSettingsProp
           starterQuestions: starterQuestions.filter(q => q.trim()).length > 0
             ? JSON.stringify(starterQuestions.filter(q => q.trim()))
             : null,
+          welcomeMessage: welcomeMessage.trim() || null,
         }),
       });
 
@@ -262,6 +265,26 @@ export function ChatSettings({ chat, allowPublicChats = true }: ChatSettingsProp
             Maximal 4 Startfragen möglich
           </p>
         )}
+      </section>
+
+      {/* Begrüssungsnachricht */}
+      <section className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="flex items-center space-x-2 mb-4">
+          <MessageSquare className="w-5 h-5 text-gray-400" />
+          <h2 className="text-lg font-semibold text-gray-900">
+            Begrüssungsnachricht
+          </h2>
+        </div>
+        <p className="text-sm text-gray-500 mb-4">
+          Diese Nachricht wird als erste Bot-Nachricht angezeigt, wenn der Chat geöffnet wird.
+        </p>
+        <textarea
+          value={welcomeMessage}
+          onChange={(e) => setWelcomeMessage(e.target.value)}
+          placeholder="z.B. Hallo! Ich bin dein persönlicher Assistent. Wie kann ich dir heute helfen?"
+          rows={3}
+          className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        />
       </section>
 
       {/* Zugriff */}

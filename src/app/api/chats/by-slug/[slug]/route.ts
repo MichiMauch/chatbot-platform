@@ -70,6 +70,7 @@ export async function GET(
         systemInstruction: chat.systemInstruction,
         isPublic: chat.isPublic,
         files: chat.files,
+        welcomeMessage: chat.welcomeMessage,
         starterQuestions: (() => {
           if (!chat.starterQuestions) return [];
           try {

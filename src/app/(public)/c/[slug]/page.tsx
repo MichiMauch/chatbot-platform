@@ -17,6 +17,7 @@ interface Chat {
   isPublic: boolean;
   files?: string;
   starterQuestions?: string[];
+  welcomeMessage?: string | null;
 }
 
 export default function PublicChatPage() {
