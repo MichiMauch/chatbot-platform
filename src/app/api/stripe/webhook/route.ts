@@ -118,6 +118,20 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return;
   }
 
+  // Fetch subscription details to get period dates
+  let currentPeriodEnd: Date | null = null;
+  if (session.subscription && stripe) {
+    try {
+      const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
+      const subData = subscription as unknown as { current_period_end?: number };
+      if (subData.current_period_end) {
+        currentPeriodEnd = new Date(subData.current_period_end * 1000);
+      }
+    } catch (err) {
+      console.error("[Stripe Webhook] Failed to fetch subscription:", err);
+    }
+  }
+
   // Update team with subscription info
   await db
     .update(teams)
@@ -129,6 +143,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       maxChats: plan.limits.maxChats,
       maxMessagesPerMonth: plan.limits.maxMessagesPerMonth,
       maxStorageMb: plan.limits.maxStorageMb,
+      ...(currentPeriodEnd && { currentPeriodEnd }),
     })
     .where(eq(teams.id, teamId));
 
@@ -136,6 +151,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     teamId,
     planId,
     subscriptionId: session.subscription,
+    currentPeriodEnd,
   });
 }
 

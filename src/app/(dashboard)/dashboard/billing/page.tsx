@@ -138,11 +138,20 @@ export default async function BillingPage() {
             </div>
             {currentPlan !== "free" && (
               <>
-                <p className="text-sm text-gray-500">
-                  Nächste Abrechnung: {data?.team?.currentPeriodEnd
-                    ? new Date(data.team.currentPeriodEnd).toLocaleDateString("de-CH")
-                    : "-"}
-                </p>
+                {data?.team?.currentPeriodEnd && (
+                  <div className="space-y-1">
+                    <p className="text-sm text-gray-500">
+                      Letzte Abrechnung: {(() => {
+                        const lastBilling = new Date(data.team.currentPeriodEnd);
+                        lastBilling.setMonth(lastBilling.getMonth() - 1);
+                        return lastBilling.toLocaleDateString("de-CH");
+                      })()}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Nächste Abrechnung: {new Date(data.team.currentPeriodEnd).toLocaleDateString("de-CH")}
+                    </p>
+                  </div>
+                )}
                 {data?.team?.subscriptionStatus && (
                   <p className="text-sm text-gray-500">
                     Status: <span className={`font-medium ${
