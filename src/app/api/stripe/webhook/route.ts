@@ -198,8 +198,10 @@ async function updateTeamSubscription(teamId: string, subscription: Stripe.Subsc
   // Get subscription data with proper typing for new Stripe API
   const subData = subscription as unknown as {
     current_period_end?: number;
+    cancel_at?: number;
     cancel_at_period_end?: boolean;
     items?: {
+      object?: string;
       data?: Array<{
         current_period_end?: number;
         current_period_start?: number;
@@ -207,10 +209,26 @@ async function updateTeamSubscription(teamId: string, subscription: Stripe.Subsc
     };
   };
 
-  // Get current period end - check both locations (new API has it in items)
+  // Log raw data for debugging
+  console.log("[Stripe Webhook] Raw subscription data:", {
+    current_period_end: subData.current_period_end,
+    cancel_at: subData.cancel_at,
+    items_type: typeof subData.items,
+    items_data_length: subData.items?.data?.length,
+    items_first: subData.items?.data?.[0],
+  });
+
+  // Get current period end - check multiple locations
   let periodEndTimestamp = subData.current_period_end;
+
+  // Try items.data[0].current_period_end (new Stripe API structure)
   if (!periodEndTimestamp && subData.items?.data?.[0]?.current_period_end) {
     periodEndTimestamp = subData.items.data[0].current_period_end;
+  }
+
+  // Fallback to cancel_at if subscription is being canceled
+  if (!periodEndTimestamp && subData.cancel_at) {
+    periodEndTimestamp = subData.cancel_at;
   }
 
   const currentPeriodEnd = periodEndTimestamp
