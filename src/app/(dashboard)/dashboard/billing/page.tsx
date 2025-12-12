@@ -4,6 +4,7 @@ import { CreditCard, Check, Zap } from "lucide-react";
 import { PLANS, formatPrice } from "@/lib/stripe";
 import { PlanUpgradeButton } from "./PlanUpgradeButton";
 import { BillingPortalButton } from "./BillingPortalButton";
+import { CancelSubscriptionButton } from "./CancelSubscriptionButton";
 import { db } from "@/lib/db";
 import { teams, teamMembers, chats, chatSessions, chatMessages } from "@/lib/schema";
 import { eq, count, and, gte } from "drizzle-orm";
@@ -159,16 +160,26 @@ export default async function BillingPage() {
                         ? "text-green-600"
                         : data.team.subscriptionStatus === "past_due"
                         ? "text-red-600"
+                        : data.team.subscriptionStatus === "canceling"
+                        ? "text-amber-600"
                         : "text-gray-600"
                     }`}>
                       {data.team.subscriptionStatus === "active" ? "Aktiv" :
                        data.team.subscriptionStatus === "past_due" ? "Zahlung ausstehend" :
                        data.team.subscriptionStatus === "canceled" ? "Gekündigt" :
+                       data.team.subscriptionStatus === "canceling" ? "Wird gekündigt" :
                        data.team.subscriptionStatus}
                     </span>
                   </p>
                 )}
-                <BillingPortalButton hasSubscription={!!data?.team?.stripeSubscriptionId} />
+                <div className="flex flex-wrap gap-2">
+                  <BillingPortalButton hasSubscription={!!data?.team?.stripeSubscriptionId} />
+                  <CancelSubscriptionButton
+                    hasSubscription={!!data?.team?.stripeSubscriptionId}
+                    currentPeriodEnd={data?.team?.currentPeriodEnd ?? null}
+                    isCanceling={data?.team?.subscriptionStatus === "canceling"}
+                  />
+                </div>
               </>
             )}
           </div>
