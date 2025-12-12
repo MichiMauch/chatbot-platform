@@ -126,7 +126,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       console.log("[Stripe Webhook] Subscription data:", JSON.stringify(subscription, null, 2));
 
       // Try multiple ways to get the period end
-      const subAny = subscription as Record<string, unknown>;
+      const subAny = subscription as unknown as Record<string, unknown>;
       const periodEnd = subAny.current_period_end || subAny.currentPeriodEnd;
 
       if (typeof periodEnd === "number") {
