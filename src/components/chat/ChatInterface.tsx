@@ -369,80 +369,35 @@ export default function ChatInterface({ chat }: ChatInterfaceProps) {
       >
         <div className="max-w-3xl mx-auto space-y-4">
           {messages.length === 0 ? (
-            chat.welcomeMessage ? (
-              // Welcome message as bot bubble
-              <>
-                <div className="flex justify-start">
-                  <div className="flex space-x-3 max-w-[85%]">
-                    {/* Avatar */}
-                    <div
-                      className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
-                      style={{
-                        backgroundColor: theme.light,
-                        color: theme.primary,
-                      }}
-                    >
-                      <Bot className="w-4 h-4" />
-                    </div>
-                    {/* Message bubble */}
-                    <div
-                      className="px-4 py-3 rounded-2xl"
-                      style={{
-                        backgroundColor: "white",
-                        color: "#1f2937",
-                        boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
-                      }}
-                    >
-                      <p className="whitespace-pre-wrap text-sm sm:text-base">
-                        {chat.welcomeMessage}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Starter Questions below welcome message */}
-                {chat.starterQuestions && chat.starterQuestions.length > 0 && (
-                  <div className="grid grid-cols-2 gap-2 max-w-xl mx-auto mt-4">
-                    {chat.starterQuestions.map((question, index) => (
-                      <button
-                        key={index}
-                        onClick={() => handleSend(question)}
-                        className="w-full px-4 py-3 text-left text-sm text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
-                      >
-                        {question}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </>
-            ) : (
-              // Default centered welcome
-              <div className="text-center py-12">
-                <Bot
-                  className="w-12 h-12 mx-auto mb-4"
-                  style={{ color: theme.primary }}
-                />
-                <p className="text-lg font-medium text-gray-900">Willkommen!</p>
+            <div className="text-center py-12">
+              <Bot
+                className="w-12 h-12 mx-auto mb-4"
+                style={{ color: theme.primary }}
+              />
+              <p className="text-lg font-medium text-gray-900 whitespace-pre-wrap">
+                {chat.welcomeMessage || "Willkommen!"}
+              </p>
+              {!chat.welcomeMessage && (
                 <p className="text-sm text-gray-500 mt-2">
                   Stelle eine Frage, um zu beginnen.
                 </p>
+              )}
 
-                {/* Starter Questions */}
-                {chat.starterQuestions && chat.starterQuestions.length > 0 && (
-                  <div className="mt-6 grid grid-cols-2 gap-2 max-w-xl mx-auto">
-                    {chat.starterQuestions.map((question, index) => (
-                      <button
-                        key={index}
-                        onClick={() => handleSend(question)}
-                        className="w-full px-4 py-3 text-left text-sm text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
-                      >
-                        {question}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )
+              {/* Starter Questions */}
+              {chat.starterQuestions && chat.starterQuestions.length > 0 && (
+                <div className="mt-6 grid grid-cols-2 gap-2 max-w-xl mx-auto">
+                  {chat.starterQuestions.map((question, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleSend(question)}
+                      className="w-full px-4 py-3 text-left text-sm text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
+                    >
+                      {question}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           ) : null}
 
           {messages.map((message, index) => (
