@@ -154,6 +154,14 @@ export const chats = sqliteTable("chats", {
   allowAnonymous: integer("allow_anonymous", { mode: "boolean" }).default(true),
   starterQuestions: text("starter_questions"), // JSON array, max 4
   welcomeMessage: text("welcome_message"), // Bot intro message
+  chatLogo: text("chat_logo").default("default"), // Lottie animation ID
+
+  // Lead Generation
+  leadCaptureEnabled: integer("lead_capture_enabled", { mode: "boolean" }).default(false),
+  leadCaptureTrigger: text("lead_capture_trigger"), // "2" | "5" | "10" | "exit" | null
+  calendarLink: text("calendar_link"), // External calendar booking link
+  newsletterEnabled: integer("newsletter_enabled", { mode: "boolean" }).default(false),
+  newsletterTrigger: text("newsletter_trigger"), // "2" | "5" | "10" | "exit" | null
 
   // Metadata
   files: text("files"), // JSON array
@@ -399,6 +407,70 @@ export const scrapeHistory = sqliteTable("scrape_history", {
 export const scrapeHistoryRelations = relations(scrapeHistory, ({ one }) => ({
   chat: one(chats, {
     fields: [scrapeHistory.chatId],
+    references: [chats.id],
+  }),
+}));
+
+// ============================================
+// LEADS
+// ============================================
+export const leads = sqliteTable("leads", {
+  id: text("id").primaryKey(),
+  chatId: text("chat_id").references(() => chats.id, { onDelete: "cascade" }),
+  teamId: text("team_id")
+    .notNull()
+    .references(() => teams.id, { onDelete: "cascade" }),
+  sessionId: text("session_id"),
+
+  // Contact info
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone"),
+  message: text("message"),
+
+  // Metadata
+  source: text("source").notNull(), // "contact_form", "newsletter"
+  status: text("status").default("new"), // new, contacted, converted
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+export const leadsRelations = relations(leads, ({ one }) => ({
+  chat: one(chats, {
+    fields: [leads.chatId],
+    references: [chats.id],
+  }),
+  team: one(teams, {
+    fields: [leads.teamId],
+    references: [teams.id],
+  }),
+}));
+
+// ============================================
+// NEWSLETTER SUBSCRIBERS
+// ============================================
+export const newsletterSubscribers = sqliteTable("newsletter_subscribers", {
+  id: text("id").primaryKey(),
+  teamId: text("team_id")
+    .notNull()
+    .references(() => teams.id, { onDelete: "cascade" }),
+  chatId: text("chat_id").references(() => chats.id, { onDelete: "set null" }),
+  email: text("email").notNull(),
+  name: text("name"),
+  subscribedAt: integer("subscribed_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+export const newsletterSubscribersRelations = relations(newsletterSubscribers, ({ one }) => ({
+  team: one(teams, {
+    fields: [newsletterSubscribers.teamId],
+    references: [teams.id],
+  }),
+  chat: one(chats, {
+    fields: [newsletterSubscribers.chatId],
     references: [chats.id],
   }),
 }));

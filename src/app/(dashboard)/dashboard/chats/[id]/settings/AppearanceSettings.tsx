@@ -2,35 +2,41 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, Check, TrendingUp, Plus, X, MessageCircleQuestion, MessageSquare } from "lucide-react";
+import { Save, Check, TrendingUp, Plus, X, MessageCircleQuestion, MessageSquare, Bot, Users, Calendar, Mail } from "lucide-react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import {
-  systemInstructionTemplates,
-  themeColors,
-  type ThemeColor,
-} from "@/lib/systemInstructionTemplates";
+import { themeColors, type ThemeColor } from "@/lib/systemInstructionTemplates";
+import { chatLogos, type ChatLogoId } from "@/lib/chatLogos";
+
+// Dynamic import for LottieLoader to avoid SSR issues
+const LottieLoader = dynamic(() => import("@/components/LottieLoader"), { ssr: false });
 
 interface Chat {
   id: string;
   displayName: string;
   description: string | null;
   themeColor: string | null;
-  systemInstruction: string | null;
   isPublic: boolean | null;
   allowAnonymous: boolean | null;
   starterQuestions: string | null;
   welcomeMessage: string | null;
+  chatLogo: string | null;
+  leadCaptureEnabled: boolean | null;
+  leadCaptureTrigger: string | null;
+  calendarLink: string | null;
+  newsletterEnabled: boolean | null;
+  newsletterTrigger: string | null;
 }
 
-interface ChatSettingsProps {
+interface AppearanceSettingsProps {
   chat: Chat;
   allowPublicChats?: boolean;
 }
 
-export function ChatSettings({ chat, allowPublicChats = true }: ChatSettingsProps) {
+export function AppearanceSettings({ chat, allowPublicChats = true }: AppearanceSettingsProps) {
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
 
@@ -39,13 +45,8 @@ export function ChatSettings({ chat, allowPublicChats = true }: ChatSettingsProp
   const [themeColor, setThemeColor] = useState<ThemeColor>(
     (chat.themeColor as ThemeColor) || "blue"
   );
-  const [systemInstruction, setSystemInstruction] = useState(
-    chat.systemInstruction || ""
-  );
   const [isPublic, setIsPublic] = useState(chat.isPublic ?? true);
-  const [allowAnonymous, setAllowAnonymous] = useState(
-    chat.allowAnonymous ?? true
-  );
+  const [allowAnonymous, setAllowAnonymous] = useState(chat.allowAnonymous ?? true);
   const [starterQuestions, setStarterQuestions] = useState<string[]>(() => {
     if (!chat.starterQuestions) return [];
     try {
@@ -55,13 +56,15 @@ export function ChatSettings({ chat, allowPublicChats = true }: ChatSettingsProp
       return [];
     }
   });
-  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(() => {
-    const match = systemInstructionTemplates.find(
-      (t) => t.instruction === chat.systemInstruction
-    );
-    return match?.id ?? null;
-  });
   const [welcomeMessage, setWelcomeMessage] = useState(chat.welcomeMessage || "");
+  const [chatLogo, setChatLogo] = useState<ChatLogoId>(
+    (chat.chatLogo as ChatLogoId) || "default"
+  );
+  const [leadCaptureEnabled, setLeadCaptureEnabled] = useState(chat.leadCaptureEnabled ?? false);
+  const [leadCaptureTrigger, setLeadCaptureTrigger] = useState(chat.leadCaptureTrigger || "5");
+  const [calendarLink, setCalendarLink] = useState(chat.calendarLink || "");
+  const [newsletterEnabled, setNewsletterEnabled] = useState(chat.newsletterEnabled ?? false);
+  const [newsletterTrigger, setNewsletterTrigger] = useState(chat.newsletterTrigger || "5");
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -73,13 +76,18 @@ export function ChatSettings({ chat, allowPublicChats = true }: ChatSettingsProp
           displayName,
           description,
           themeColor,
-          systemInstruction,
           isPublic,
           allowAnonymous,
           starterQuestions: starterQuestions.filter(q => q.trim()).length > 0
             ? JSON.stringify(starterQuestions.filter(q => q.trim()))
             : null,
           welcomeMessage: welcomeMessage.trim() || null,
+          chatLogo,
+          leadCaptureEnabled,
+          leadCaptureTrigger: leadCaptureEnabled ? leadCaptureTrigger : null,
+          calendarLink: calendarLink.trim() || null,
+          newsletterEnabled,
+          newsletterTrigger: newsletterEnabled ? newsletterTrigger : null,
         }),
       });
 
@@ -95,14 +103,6 @@ export function ChatSettings({ chat, allowPublicChats = true }: ChatSettingsProp
       toast.error("Ein Fehler ist aufgetreten");
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  const applyTemplate = (templateId: string) => {
-    const template = systemInstructionTemplates.find((t) => t.id === templateId);
-    if (template) {
-      setSystemInstruction(template.instruction);
-      setSelectedTemplate(templateId);
     }
   };
 
@@ -175,45 +175,46 @@ export function ChatSettings({ chat, allowPublicChats = true }: ChatSettingsProp
         </div>
       </section>
 
-      {/* KI-Anweisung */}
+      {/* Chat-Logo */}
       <section className="bg-white rounded-xl border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          KI-Anweisung
+          Chat-Logo
         </h2>
         <p className="text-sm text-gray-500 mb-4">
-          Definiere, wie sich der Chatbot verhalten soll. Diese Anweisung wird bei jeder Antwort berücksichtigt.
+          Wähle ein animiertes Logo für deinen Chatbot.
         </p>
-
-        {/* Template-Auswahl */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Vorlage wählen
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {systemInstructionTemplates.map((template) => (
-              <button
-                key={template.id}
-                onClick={() => applyTemplate(template.id)}
-                className={`px-3 py-1.5 text-sm rounded-lg border transition-all ${
-                  selectedTemplate === template.id
-                    ? "bg-blue-50 border-blue-500 text-blue-700 ring-2 ring-blue-500"
-                    : "border-gray-200 hover:bg-gray-50 hover:border-gray-300"
-                }`}
-              >
-                {template.name}
-              </button>
-            ))}
-          </div>
+        <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
+          {chatLogos.map((logo) => (
+            <button
+              key={logo.id}
+              onClick={() => setChatLogo(logo.id)}
+              className={`relative aspect-square rounded-xl border-2 transition-all hover:scale-105 flex items-center justify-center bg-gray-50 ${
+                chatLogo === logo.id
+                  ? "border-blue-500 ring-2 ring-blue-500"
+                  : "border-gray-200 hover:border-gray-300"
+              }`}
+              title={logo.name}
+            >
+              {logo.path ? (
+                <div className="w-12 h-12">
+                  <LottieLoader
+                    path={logo.path}
+                    loop
+                    autoplay
+                    style={{ width: "100%", height: "100%" }}
+                  />
+                </div>
+              ) : (
+                <Bot className="w-8 h-8 text-gray-400" />
+              )}
+              {chatLogo === logo.id && (
+                <div className="absolute top-1 right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                  <Check className="w-3 h-3 text-white" />
+                </div>
+              )}
+            </button>
+          ))}
         </div>
-
-        {/* Textarea */}
-        <textarea
-          value={systemInstruction}
-          onChange={(e) => setSystemInstruction(e.target.value)}
-          placeholder="z.B. Du bist ein freundlicher Assistent, der Fragen zu unseren Produkten beantwortet..."
-          rows={5}
-          className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono text-sm"
-        />
       </section>
 
       {/* Startfragen */}
@@ -285,6 +286,134 @@ export function ChatSettings({ chat, allowPublicChats = true }: ChatSettingsProp
           rows={3}
           className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
+      </section>
+
+      {/* Lead-Generierung */}
+      <section className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="flex items-center space-x-2 mb-4">
+          <Users className="w-5 h-5 text-gray-400" />
+          <h2 className="text-lg font-semibold text-gray-900">
+            Lead-Generierung
+          </h2>
+        </div>
+        <p className="text-sm text-gray-500 mb-4">
+          Sammle Kontaktdaten von interessierten Besuchern.
+        </p>
+
+        <div className="space-y-6">
+          {/* Lead Capture Toggle */}
+          <label className="flex items-center justify-between">
+            <div>
+              <span className="font-medium text-gray-900">Kontaktformular</span>
+              <p className="text-sm text-gray-500">
+                Zeige ein Kontaktformular nach einigen Nachrichten
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setLeadCaptureEnabled(!leadCaptureEnabled)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                leadCaptureEnabled ? "bg-blue-600" : "bg-gray-200"
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  leadCaptureEnabled ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+          </label>
+
+          {/* Contact Form Trigger */}
+          {leadCaptureEnabled && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Wann soll das Kontaktformular erscheinen?
+              </label>
+              <select
+                value={leadCaptureTrigger}
+                onChange={(e) => setLeadCaptureTrigger(e.target.value)}
+                className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="2">Nach 2 Antworten</option>
+                <option value="5">Nach 5 Antworten</option>
+                <option value="10">Nach 10 Antworten</option>
+                <option value="exit">Beim Verlassen der Seite</option>
+              </select>
+              <p className="mt-1 text-xs text-gray-500">
+                Das Formular erscheint als Chat-Nachricht im Verlauf
+              </p>
+            </div>
+          )}
+
+          {/* Calendar Link */}
+          <div>
+            <div className="flex items-center space-x-2 mb-2">
+              <Calendar className="w-4 h-4 text-gray-400" />
+              <label className="block text-sm font-medium text-gray-700">
+                Kalender-Link (optional)
+              </label>
+            </div>
+            <input
+              type="url"
+              value={calendarLink}
+              onChange={(e) => setCalendarLink(e.target.value)}
+              placeholder="https://calendar.app.google/..."
+              className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Zeigt einen &quot;Termin buchen&quot; Button im Chat
+            </p>
+          </div>
+
+          {/* Newsletter Toggle */}
+          <label className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Mail className="w-4 h-4 text-gray-400" />
+              <div>
+                <span className="font-medium text-gray-900">Newsletter</span>
+                <p className="text-sm text-gray-500">
+                  Email-Anmeldung im Chat anbieten
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setNewsletterEnabled(!newsletterEnabled)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                newsletterEnabled ? "bg-blue-600" : "bg-gray-200"
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  newsletterEnabled ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+          </label>
+
+          {/* Newsletter Trigger */}
+          {newsletterEnabled && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Wann soll das Newsletter-Formular erscheinen?
+              </label>
+              <select
+                value={newsletterTrigger}
+                onChange={(e) => setNewsletterTrigger(e.target.value)}
+                className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="2">Nach 2 Antworten</option>
+                <option value="5">Nach 5 Antworten</option>
+                <option value="10">Nach 10 Antworten</option>
+                <option value="exit">Beim Verlassen der Seite</option>
+              </select>
+              <p className="mt-1 text-xs text-gray-500">
+                Das Formular erscheint als Chat-Nachricht im Verlauf
+              </p>
+            </div>
+          )}
+        </div>
       </section>
 
       {/* Zugriff */}

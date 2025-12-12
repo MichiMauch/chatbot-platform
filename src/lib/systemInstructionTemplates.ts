@@ -68,6 +68,7 @@ export const themeColors = [
   { id: "purple", name: "Lila", color: "#a855f7" },
   { id: "orange", name: "Orange", color: "#f97316" },
   { id: "red", name: "Rot", color: "#ef4444" },
+  { id: "cyan", name: "Türkis", color: "#4FD1D3" },
 ] as const;
 
 export type ThemeColor = (typeof themeColors)[number]["id"];

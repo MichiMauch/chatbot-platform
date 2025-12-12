@@ -4,18 +4,17 @@ import Link from "next/link";
 import { ArrowLeft, ExternalLink, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/db";
-import { chats, teamMembers } from "@/lib/schema";
+import { chats, teamMembers, teams } from "@/lib/schema";
 import { eq } from "drizzle-orm";
-import { CopyUrlButton } from "./CopyUrlButton";
-import { ContentSourceToggle } from "./ContentSourceToggle";
-import { ChatNavigation } from "./ChatNavigation";
-import { AIInstruction } from "./AIInstruction";
+import { ChatNavigation } from "../ChatNavigation";
+import { AppearanceSettings } from "./AppearanceSettings";
+import { getPlan } from "@/lib/stripe";
 
-interface ChatDetailPageProps {
+interface ChatSettingsPageProps {
   params: Promise<{ id: string }>;
 }
 
-export default async function ChatDetailPage({ params }: ChatDetailPageProps) {
+export default async function ChatSettingsPage({ params }: ChatSettingsPageProps) {
   const { id } = await params;
   const session = await auth();
 
@@ -40,6 +39,14 @@ export default async function ChatDetailPage({ params }: ChatDetailPageProps) {
   if (!membership || membership.teamId !== chat.teamId) {
     notFound();
   }
+
+  // Load team to check plan
+  const team = await db.query.teams.findFirst({
+    where: eq(teams.id, chat.teamId),
+  });
+
+  const plan = getPlan(team?.plan || "free");
+  const allowPublicChats = plan.limits.allowPublicChats;
 
   const publicUrl = `/c/${chat.name}`;
 
@@ -84,51 +91,8 @@ export default async function ChatDetailPage({ params }: ChatDetailPageProps) {
         </div>
       </div>
 
-      {/* Public URL */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Öffentliche URL
-        </h2>
-        <div className="flex items-center gap-3">
-          <code className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 font-mono text-sm text-gray-700">
-            {publicUrl}
-          </code>
-          <CopyUrlButton url={publicUrl} />
-        </div>
-        <p className="text-sm text-gray-500 mt-2">
-          Teile diese URL, damit andere mit deinem Chatbot chatten können.
-        </p>
-      </div>
-
-      {/* Content Source (Documents or Website) */}
-      <ContentSourceToggle
-        chatId={chat.id}
-        initialUploadType={chat.uploadType || "documents"}
-        initialFiles={chat.files ? JSON.parse(chat.files) : []}
-        sitemapUrls={chat.sitemapUrls ? JSON.parse(chat.sitemapUrls) : []}
-      />
-
-      {/* AI Instruction */}
-      <AIInstruction
-        chatId={chat.id}
-        initialInstruction={chat.systemInstruction}
-      />
-
-      {/* Info */}
-      <div className="bg-gray-50 rounded-xl border border-gray-200 p-6">
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <span className="text-gray-500">Erstellt am:</span>
-            <span className="ml-2 text-gray-900">
-              {chat.createdAt.toLocaleDateString("de-CH")}
-            </span>
-          </div>
-          <div>
-            <span className="text-gray-500">URL-Name:</span>
-            <span className="ml-2 text-gray-900 font-mono">{chat.name}</span>
-          </div>
-        </div>
-      </div>
+      {/* Appearance Settings */}
+      <AppearanceSettings chat={chat} allowPublicChats={allowPublicChats} />
     </div>
   );
 }

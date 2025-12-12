@@ -177,6 +177,12 @@ export async function PATCH(
       uploadType,
       starterQuestions,
       welcomeMessage,
+      chatLogo,
+      leadCaptureEnabled,
+      leadCaptureTrigger,
+      calendarLink,
+      newsletterEnabled,
+      newsletterTrigger,
     } = body;
 
     // Check plan limits for public chats
@@ -215,6 +221,12 @@ export async function PATCH(
     if (uploadType !== undefined) updateData.uploadType = uploadType;
     if (starterQuestions !== undefined) updateData.starterQuestions = starterQuestions;
     if (welcomeMessage !== undefined) updateData.welcomeMessage = welcomeMessage;
+    if (chatLogo !== undefined) updateData.chatLogo = chatLogo;
+    if (leadCaptureEnabled !== undefined) updateData.leadCaptureEnabled = leadCaptureEnabled;
+    if (leadCaptureTrigger !== undefined) updateData.leadCaptureTrigger = leadCaptureTrigger;
+    if (calendarLink !== undefined) updateData.calendarLink = calendarLink?.trim() || null;
+    if (newsletterEnabled !== undefined) updateData.newsletterEnabled = newsletterEnabled;
+    if (newsletterTrigger !== undefined) updateData.newsletterTrigger = newsletterTrigger;
 
     // Immer updatedAt aktualisieren
     await withRetry(() =>

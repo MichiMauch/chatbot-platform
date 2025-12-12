@@ -16,12 +16,14 @@ import {
   User,
   ChevronUp,
   Sparkles,
+  Target,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Chats", href: "/dashboard/chats", icon: MessageSquare },
+  { name: "Leads", href: "/dashboard/leads", icon: Target },
   { name: "Team", href: "/dashboard/team", icon: Users },
 ];
 

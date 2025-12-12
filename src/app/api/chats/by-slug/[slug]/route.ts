@@ -71,6 +71,12 @@ export async function GET(
         isPublic: chat.isPublic,
         files: chat.files,
         welcomeMessage: chat.welcomeMessage,
+        chatLogo: chat.chatLogo,
+        leadCaptureEnabled: chat.leadCaptureEnabled,
+        leadCaptureTrigger: chat.leadCaptureTrigger,
+        calendarLink: chat.calendarLink,
+        newsletterEnabled: chat.newsletterEnabled,
+        newsletterTrigger: chat.newsletterTrigger,
         starterQuestions: (() => {
           if (!chat.starterQuestions) return [];
           try {

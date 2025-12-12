@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { chats } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 
-// Only use gemini-2.5-flash - required for File Search tool
+// Gemini model for chat with File Search (2.5-flash required for File Search tool)
 const MODEL = "gemini-2.5-flash";
 
 // Helper function for exponential backoff retry

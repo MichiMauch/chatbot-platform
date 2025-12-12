@@ -18,6 +18,7 @@ interface Chat {
   files?: string;
   starterQuestions?: string[];
   welcomeMessage?: string | null;
+  chatLogo?: string | null;
 }
 
 export default function PublicChatPage() {

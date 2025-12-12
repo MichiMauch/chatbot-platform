@@ -42,19 +42,23 @@ export function useTypewriter({
     // Split text into words
     const words = text.split(" ");
     let currentIndex = 0;
+    let isActive = true; // Guard against stale callbacks (React Strict Mode)
 
     setDisplayedText("");
     setIsComplete(false);
 
     const interval = setInterval(() => {
+      // Skip if effect was cleaned up
+      if (!isActive) return;
+
       if (currentIndex < words.length) {
-        setDisplayedText((prev) => {
-          const newText =
-            currentIndex === 0
-              ? words[currentIndex]
-              : prev + " " + words[currentIndex];
-          return newText;
-        });
+        const word = words[currentIndex];
+        // Extra guard: only add if word is defined
+        if (word !== undefined) {
+          setDisplayedText((prev) => {
+            return currentIndex === 0 ? word : prev + " " + word;
+          });
+        }
         currentIndex++;
       } else {
         setIsComplete(true);
@@ -63,7 +67,10 @@ export function useTypewriter({
       }
     }, speed);
 
-    return () => clearInterval(interval);
+    return () => {
+      isActive = false;
+      clearInterval(interval);
+    };
   }, [text, speed]);
 
   return { displayedText, isComplete, skip };
