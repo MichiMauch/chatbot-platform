@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl:*)",
+      "Bash(cat:*)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(grep:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm install:*)",
+      "Bash(npx drizzle-kit:*)",
+      "Bash(ls:*)"
+    ]
+  }
+}
