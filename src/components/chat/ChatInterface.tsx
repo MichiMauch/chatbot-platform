@@ -265,13 +265,14 @@ export default function ChatInterface({ chat }: ChatInterfaceProps) {
     setPreviewSource(null);
   }
 
-  async function handleSend() {
-    if (!input.trim() || loading) return;
+  async function handleSend(directMessage?: string) {
+    const messageText = directMessage || input.trim();
+    if (!messageText || loading) return;
 
     const userMessage: Message = {
       id: nanoid(),
       role: "user",
-      content: input.trim(),
+      content: messageText,
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -379,18 +380,11 @@ export default function ChatInterface({ chat }: ChatInterfaceProps) {
 
               {/* Starter Questions */}
               {chat.starterQuestions && chat.starterQuestions.length > 0 && (
-                <div className="mt-6 space-y-2 max-w-md mx-auto">
+                <div className="mt-6 grid grid-cols-2 gap-2 max-w-xl mx-auto">
                   {chat.starterQuestions.map((question, index) => (
                     <button
                       key={index}
-                      onClick={() => {
-                        setInput(question);
-                        // Auto-submit the question
-                        setTimeout(() => {
-                          const form = document.querySelector("form");
-                          if (form) form.requestSubmit();
-                        }, 100);
-                      }}
+                      onClick={() => handleSend(question)}
                       className="w-full px-4 py-3 text-left text-sm text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
                     >
                       {question}
