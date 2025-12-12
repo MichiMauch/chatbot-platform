@@ -204,7 +204,7 @@ async function updateTeamSubscription(teamId: string, subscription: Stripe.Subsc
     : null;
 
   // Determine subscription status - check if canceling at period end
-  let subscriptionStatus = subscription.status;
+  let subscriptionStatus: string = subscription.status;
   if (subData.cancel_at_period_end && subscription.status === "active") {
     subscriptionStatus = "canceling";
   }
