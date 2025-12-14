@@ -1,4 +1,8 @@
 import { NextResponse } from "next/server";
+
+// Force dynamic rendering - skip DB access during build
+export const dynamic = "force-dynamic";
+
 import { db, withRetry } from "@/lib/db";
 import { chats, teamMembers, scrapedPages, scrapeHistory } from "@/lib/schema";
 import { eq, sql } from "drizzle-orm";

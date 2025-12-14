@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+
+// Force dynamic rendering - skip DB access during build
+export const dynamic = "force-dynamic";
+
 import { headers } from "next/headers";
 import { db } from "@/lib/db";
 import { teams } from "@/lib/schema";

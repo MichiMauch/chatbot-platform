@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+
+// Force dynamic rendering - skip DB access during build
+export const dynamic = "force-dynamic";
+
 import { ai } from "@/lib/gemini";
 import { getOrCreateSession, logChatMessage } from "@/lib/analytics";
 import { db } from "@/lib/db";
