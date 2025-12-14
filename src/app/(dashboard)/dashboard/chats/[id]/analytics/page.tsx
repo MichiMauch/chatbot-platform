@@ -1,3 +1,6 @@
+// Force dynamic rendering - skip DB access during build
+export const dynamic = "force-dynamic";
+
 import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { db } from "@/lib/db";

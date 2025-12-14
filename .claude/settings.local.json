@@ -15,7 +15,10 @@
       "Bash(xargs ls:*)",
       "Bash(find:*)",
       "Bash(node -e:*)",
-      "Bash(yes:*)"
+      "Bash(yes:*)",
+      "Bash(while read file)",
+      "Bash(do if ! grep -q \"export const dynamic\" \"$file\")",
+      "Bash(then echo \"Missing dynamic: $file\" fi done)"
     ]
   }
 }

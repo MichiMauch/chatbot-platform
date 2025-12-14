@@ -1,3 +1,6 @@
+// Force dynamic rendering - skip DB access during build
+export const dynamic = "force-dynamic";
+
 import { db } from "@/lib/db";
 import { users, teams, chats, chatSessions, chatMessages } from "@/lib/schema";
 import { count, sql } from "drizzle-orm";
