@@ -1,19 +1,32 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import {
-  MessageSquare,
-  Users,
-  Plus,
-  ExternalLink,
-  MoreVertical,
-  TrendingUp,
-  HardDrive,
-} from "lucide-react";
 import Link from "next/link";
+import {
+  Paper,
+  Stack,
+  Group,
+  Text,
+  Title,
+  Badge,
+  Progress,
+  SimpleGrid,
+  ThemeIcon,
+  ActionIcon,
+} from "@mantine/core";
+import {
+  IconMessageCircle,
+  IconUsers,
+  IconPlus,
+  IconExternalLink,
+  IconSettings,
+  IconTrendingUp,
+  IconServer,
+} from "@tabler/icons-react";
 import { db } from "@/lib/db";
 import { chats, teamMembers, teams, chatSessions, chatMessages } from "@/lib/schema";
 import { eq, count, and, gte } from "drizzle-orm";
 import { calculateStorageFromFiles } from "@/lib/admin-stats";
+import { SetPageTitle } from "@/components/SetPageTitle";
 
 async function getDashboardData(userId: string) {
   // Get team membership
@@ -132,168 +145,168 @@ export default async function DashboardPage() {
   const currentPlan = data?.team?.plan || "free";
 
   return (
-    <div className="space-y-6">
-      {/* Welcome Section */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">
-          Willkommen, {session.user.name || "Benutzer"}!
-        </h1>
-        <p className="text-gray-500 mt-1">
-          Hier ist eine Übersicht deiner Chatbots und Nutzung.
-        </p>
-      </div>
+    <>
+      <SetPageTitle
+        title={`Willkommen, ${session.user.name || "Benutzer"}!`}
+        subtitle="Hier ist eine Übersicht deiner Chatbots und Nutzung."
+      />
 
-      {/* Usage Overview */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Deine Nutzung</h2>
-          <span className="px-3 py-1 text-sm font-medium rounded-full bg-blue-100 text-blue-800 capitalize">
-            {currentPlan} Plan
-          </span>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <UsageBar
-            label="Chatbots"
-            used={usage.chats.used}
-            limit={usage.chats.limit}
-            icon={MessageSquare}
-          />
-          <UsageBar
-            label="Nachrichten / Monat"
-            used={usage.messages.used}
-            limit={usage.messages.limit}
-            icon={MessageSquare}
-          />
-          <UsageBar
-            label="Speicher"
-            used={usage.storage.used}
-            limit={usage.storage.limit}
-            unit="MB"
-            icon={HardDrive}
-          />
-        </div>
-        {currentPlan === "free" && (
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <Link
-              href="/dashboard/billing"
-              className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
-            >
-              <TrendingUp className="w-4 h-4 mr-1" />
-              Für mehr Kapazität upgraden
-            </Link>
-          </div>
-        )}
-      </div>
+      <Stack gap="md">
+        {/* Usage Overview */}
+        <Paper p="md" withBorder>
+          <Group justify="space-between" mb="md">
+            <Title order={4}>Deine Nutzung</Title>
+            <Badge variant="light" size="lg" tt="capitalize">
+              {currentPlan} Plan
+            </Badge>
+          </Group>
+          <SimpleGrid cols={{ base: 1, md: 3 }} spacing="lg">
+            <UsageBar
+              label="Chatbots"
+              used={usage.chats.used}
+              limit={usage.chats.limit}
+              icon={IconMessageCircle}
+            />
+            <UsageBar
+              label="Nachrichten / Monat"
+              used={usage.messages.used}
+              limit={usage.messages.limit}
+              icon={IconMessageCircle}
+            />
+            <UsageBar
+              label="Speicher"
+              used={usage.storage.used}
+              limit={usage.storage.limit}
+              unit="MB"
+              icon={IconServer}
+            />
+          </SimpleGrid>
+          {currentPlan === "free" && (
+            <Group mt="md" pt="md" style={{ borderTop: "1px solid var(--mantine-color-gray-2)" }}>
+              <Link href="/dashboard/billing" style={{ textDecoration: "none" }}>
+                <Group gap={4}>
+                  <IconTrendingUp size={16} />
+                  <Text size="sm" c="blue">Für mehr Kapazität upgraden</Text>
+                </Group>
+              </Link>
+            </Group>
+          )}
+        </Paper>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatCard
-          title="Aktive Chats"
-          value={`${stats.totalChats} / ${usage.chats.limit === -1 ? "∞" : usage.chats.limit}`}
-          icon={MessageSquare}
-          color="blue"
-        />
-        <StatCard
-          title="Nachrichten (Monat)"
-          value={`${usage.messages.used} / ${usage.messages.limit === -1 ? "∞" : usage.messages.limit}`}
-          icon={MessageSquare}
-          color="green"
-        />
-        <StatCard
-          title="Team-Mitglieder"
-          value={stats.teamMembers}
-          icon={Users}
-          color="purple"
-        />
-      </div>
+        {/* Stats Grid */}
+        <SimpleGrid cols={{ base: 1, md: 3 }} spacing="sm">
+          <StatCard
+            title="Aktive Chats"
+            value={`${stats.totalChats} / ${usage.chats.limit === -1 ? "∞" : usage.chats.limit}`}
+            icon={IconMessageCircle}
+            color="blue"
+          />
+          <StatCard
+            title="Nachrichten (Monat)"
+            value={`${usage.messages.used} / ${usage.messages.limit === -1 ? "∞" : usage.messages.limit}`}
+            icon={IconMessageCircle}
+            color="green"
+          />
+          <StatCard
+            title="Team-Mitglieder"
+            value={stats.teamMembers}
+            icon={IconUsers}
+            color="violet"
+          />
+        </SimpleGrid>
 
-      {/* Quick Actions */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Schnellzugriff
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <QuickActionCard
-            title="Neuen Chat erstellen"
-            description="Erstelle einen neuen RAG-Chatbot"
-            href="/dashboard/chats/new"
-            icon={Plus}
-            disabled={usage.chats.used >= usage.chats.limit && usage.chats.limit !== -1}
-          />
-          <QuickActionCard
-            title="Team verwalten"
-            description="Lade Mitglieder ein"
-            href="/dashboard/team"
-            icon={Users}
-          />
-          <QuickActionCard
-            title="Abo verwalten"
-            description="Plan und Rechnungen"
-            href="/dashboard/billing"
-            icon={TrendingUp}
-          />
-        </div>
-      </div>
-
-      {/* Recent Chats */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Deine Chats</h2>
-          <Link
-            href="/dashboard/chats"
-            className="text-sm text-blue-600 hover:underline"
-          >
-            Alle anzeigen
-          </Link>
-        </div>
-        {teamChats.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <MessageSquare className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-            <p>Du hast noch keine Chats erstellt.</p>
-            <Link
+        {/* Quick Actions */}
+        <Paper p="md" withBorder>
+          <Title order={4} mb="md">
+            Schnellzugriff
+          </Title>
+          <SimpleGrid cols={{ base: 1, md: 3 }} spacing="sm">
+            <QuickActionCard
+              title="Neuen Chat erstellen"
+              description="Erstelle einen neuen RAG-Chatbot"
               href="/dashboard/chats/new"
-              className="inline-flex items-center mt-3 text-blue-600 hover:underline"
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              Ersten Chat erstellen
+              icon={IconPlus}
+              disabled={usage.chats.used >= usage.chats.limit && usage.chats.limit !== -1}
+            />
+            <QuickActionCard
+              title="Team verwalten"
+              description="Lade Mitglieder ein"
+              href="/dashboard/team"
+              icon={IconUsers}
+            />
+            <QuickActionCard
+              title="Abo verwalten"
+              description="Plan und Rechnungen"
+              href="/dashboard/billing"
+              icon={IconTrendingUp}
+            />
+          </SimpleGrid>
+        </Paper>
+
+        {/* Recent Chats */}
+        <Paper p="md" withBorder>
+          <Group justify="space-between" mb="md">
+            <Title order={4}>Deine Chats</Title>
+            <Link href="/dashboard/chats">
+              <Text size="sm" c="blue">Alle anzeigen</Text>
             </Link>
-          </div>
-        ) : (
-          <div className="divide-y divide-gray-100">
-            {teamChats.map((chat) => (
-              <div key={chat.id} className="flex items-center justify-between py-3">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <MessageSquare className="w-4 h-4 text-blue-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-gray-900">{chat.displayName}</h3>
-                    <p className="text-xs text-gray-500">/c/{chat.name}</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Link
-                    href={`/c/${chat.name}`}
-                    target="_blank"
-                    className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
-                    title="Chat öffnen"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </Link>
-                  <Link
-                    href={`/dashboard/chats/${chat.id}`}
-                    className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
-                    title="Einstellungen"
-                  >
-                    <MoreVertical className="w-4 h-4" />
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+          </Group>
+          {teamChats.length === 0 ? (
+            <Stack align="center" py="xl">
+              <ThemeIcon size={48} radius="xl" variant="light" color="gray">
+                <IconMessageCircle size={24} />
+              </ThemeIcon>
+              <Text c="dimmed">Du hast noch keine Chats erstellt.</Text>
+              <Link href="/dashboard/chats/new" style={{ textDecoration: "none" }}>
+                <Group gap={4}>
+                  <IconPlus size={16} />
+                  <Text size="sm" c="blue">Ersten Chat erstellen</Text>
+                </Group>
+              </Link>
+            </Stack>
+          ) : (
+            <Stack gap="xs">
+              {teamChats.map((chat) => (
+                <Group key={chat.id} justify="space-between" py="xs">
+                  <Group gap="sm">
+                    <ThemeIcon size="lg" variant="light">
+                      <IconMessageCircle size={18} />
+                    </ThemeIcon>
+                    <div>
+                      <Text fw={500}>{chat.displayName}</Text>
+                      <Text size="xs" c="dimmed" ff="monospace">
+                        /c/{chat.name}
+                      </Text>
+                    </div>
+                  </Group>
+                  <Group gap="xs">
+                    <ActionIcon
+                      component="a"
+                      href={`/c/${chat.name}`}
+                      target="_blank"
+                      variant="subtle"
+                      color="gray"
+                      title="Chat öffnen"
+                    >
+                      <IconExternalLink size={18} />
+                    </ActionIcon>
+                    <Link href={`/dashboard/chats/${chat.id}`}>
+                      <ActionIcon
+                        variant="subtle"
+                        color="gray"
+                        title="Einstellungen"
+                      >
+                        <IconSettings size={18} />
+                      </ActionIcon>
+                    </Link>
+                  </Group>
+                </Group>
+              ))}
+            </Stack>
+          )}
+        </Paper>
+      </Stack>
+    </>
   );
 }
 
@@ -308,39 +321,39 @@ function UsageBar({
   used: number;
   limit: number;
   unit?: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{ size?: number }>;
 }) {
   const percentage = limit === -1 ? 0 : Math.min((used / limit) * 100, 100);
   const isUnlimited = limit === -1;
+  const formattedUsed =
+    typeof used === "number" && used % 1 !== 0
+      ? used.toFixed(1)
+      : used.toLocaleString("de-CH");
+  const formattedLimit = isUnlimited
+    ? "∞"
+    : `${limit.toLocaleString("de-CH")}${unit ? ` ${unit}` : ""}`;
 
   return (
-    <div>
-      <div className="flex items-center justify-between text-sm mb-2">
-        <div className="flex items-center text-gray-600">
-          <Icon className="w-4 h-4 mr-2 text-gray-400" />
-          {label}
-        </div>
-        <span className="text-gray-900 font-medium">
-          {typeof used === "number" && used % 1 !== 0
-            ? used.toFixed(1)
-            : used.toLocaleString("de-CH")}
-          {unit ? ` ${unit}` : ""} /{" "}
-          {isUnlimited ? "∞" : `${limit.toLocaleString("de-CH")}${unit ? ` ${unit}` : ""}`}
-        </span>
-      </div>
-      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-        <div
-          className={`h-full rounded-full transition-all ${
-            percentage > 80
-              ? "bg-red-500"
-              : percentage > 60
-              ? "bg-yellow-500"
-              : "bg-blue-500"
-          }`}
-          style={{ width: `${Math.max(percentage, 2)}%` }}
-        />
-      </div>
-    </div>
+    <Stack gap={4}>
+      <Group justify="space-between">
+        <Group gap="xs">
+          <Icon size={16} />
+          <Text size="sm" c="dimmed">
+            {label}
+          </Text>
+        </Group>
+        <Text size="sm" fw={500}>
+          {formattedUsed}
+          {unit ? ` ${unit}` : ""} / {formattedLimit}
+        </Text>
+      </Group>
+      <Progress
+        value={Math.max(percentage, 2)}
+        size="sm"
+        color={percentage > 80 ? "red" : percentage > 60 ? "yellow" : "blue"}
+        radius="xl"
+      />
+    </Stack>
   );
 }
 
@@ -352,28 +365,25 @@ function StatCard({
 }: {
   title: string;
   value: string | number;
-  icon: React.ComponentType<{ className?: string }>;
-  color: "blue" | "green" | "purple" | "orange";
+  icon: React.ComponentType<{ size?: number }>;
+  color: "blue" | "green" | "violet" | "orange";
 }) {
-  const colors = {
-    blue: "bg-blue-100 text-blue-600",
-    green: "bg-green-100 text-green-600",
-    purple: "bg-purple-100 text-purple-600",
-    orange: "bg-orange-100 text-orange-600",
-  };
-
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5">
-      <div className="flex items-center justify-between">
+    <Paper p="md" withBorder>
+      <Group justify="space-between">
         <div>
-          <p className="text-sm text-gray-500">{title}</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
+          <Text size="sm" c="dimmed">
+            {title}
+          </Text>
+          <Text size="xl" fw={700} mt={4}>
+            {value}
+          </Text>
         </div>
-        <div className={`p-3 rounded-lg ${colors[color]}`}>
-          <Icon className="w-6 h-6" />
-        </div>
-      </div>
-    </div>
+        <ThemeIcon size="xl" radius="md" variant="light" color={color}>
+          <Icon size={24} />
+        </ThemeIcon>
+      </Group>
+    </Paper>
   );
 }
 
@@ -387,35 +397,44 @@ function QuickActionCard({
   title: string;
   description: string;
   href: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{ size?: number }>;
   disabled?: boolean;
 }) {
   if (disabled) {
     return (
-      <div className="flex items-center p-4 rounded-lg border border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed">
-        <div className="p-2 bg-gray-200 rounded-lg mr-4">
-          <Icon className="w-5 h-5 text-gray-400" />
-        </div>
-        <div>
-          <h3 className="font-medium text-gray-500">{title}</h3>
-          <p className="text-sm text-gray-400">Limit erreicht</p>
-        </div>
-      </div>
+      <Paper p="md" withBorder bg="gray.0" style={{ opacity: 0.6, cursor: "not-allowed" }}>
+        <Group>
+          <ThemeIcon size="lg" variant="light" color="gray">
+            <Icon size={20} />
+          </ThemeIcon>
+          <div>
+            <Text fw={500} c="dimmed">
+              {title}
+            </Text>
+            <Text size="sm" c="dimmed">
+              Limit erreicht
+            </Text>
+          </div>
+        </Group>
+      </Paper>
     );
   }
 
   return (
-    <Link
-      href={href}
-      className="flex items-center p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
-    >
-      <div className="p-2 bg-blue-100 rounded-lg mr-4">
-        <Icon className="w-5 h-5 text-blue-600" />
-      </div>
-      <div>
-        <h3 className="font-medium text-gray-900">{title}</h3>
-        <p className="text-sm text-gray-500">{description}</p>
-      </div>
+    <Link href={href} style={{ textDecoration: "none" }}>
+      <Paper p="md" withBorder style={{ cursor: "pointer" }}>
+        <Group>
+          <ThemeIcon size="lg" variant="light">
+            <Icon size={20} />
+          </ThemeIcon>
+          <div>
+            <Text fw={500}>{title}</Text>
+            <Text size="sm" c="dimmed">
+              {description}
+            </Text>
+          </div>
+        </Group>
+      </Paper>
     </Link>
   );
 }

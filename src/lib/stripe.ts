@@ -31,6 +31,8 @@ export const PLANS = {
       maxStorageMb: 50,
       maxMembers: 1,
       allowPublicChats: false,
+      allowWidget: true,
+      allowEmbed: false,
     },
   },
   starter: {
@@ -55,6 +57,8 @@ export const PLANS = {
       maxStorageMb: 200,
       maxMembers: 5,
       allowPublicChats: true,
+      allowWidget: true,
+      allowEmbed: true,
     },
     overage: {
       perMessage: 2, // CHF 0.02
@@ -83,6 +87,8 @@ export const PLANS = {
       maxStorageMb: 500,
       maxMembers: 10,
       allowPublicChats: true,
+      allowWidget: true,
+      allowEmbed: true,
     },
   },
   enterprise: {
@@ -110,6 +116,8 @@ export const PLANS = {
       maxStorageMb: 5000, // 5 GB
       maxMembers: -1, // Unlimited
       allowPublicChats: true,
+      allowWidget: true,
+      allowEmbed: true,
     },
   },
 } as const;

@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { FileText, Globe, Loader2 } from "lucide-react";
+import { Paper, Text, SegmentedControl, Stack, Center, Loader } from "@mantine/core";
+import { IconFileText, IconWorld } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { DocumentUpload } from "./DocumentUpload";
 import { WebsiteScraper } from "./WebsiteScraper";
@@ -59,47 +60,47 @@ export function ContentSourceToggle({
   };
 
   return (
-    <div className="space-y-4">
+    <Stack gap="md">
       {/* Toggle Buttons */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <label className="block text-sm font-medium text-gray-700 mb-3">
+      <Paper p="md" withBorder>
+        <Text size="sm" fw={500} mb="sm">
           Inhaltsquelle
-        </label>
-        <div className="flex gap-2">
-          <button
-            onClick={() => handleTypeChange("documents")}
-            disabled={isUpdating}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors ${
-              uploadType === "documents"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            } disabled:opacity-50`}
-          >
-            {isUpdating && uploadType !== "documents" ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <FileText className="w-4 h-4" />
-            )}
-            Dokumente
-          </button>
-          <button
-            onClick={() => handleTypeChange("website")}
-            disabled={isUpdating}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors ${
-              uploadType === "website"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            } disabled:opacity-50`}
-          >
-            {isUpdating && uploadType !== "website" ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Globe className="w-4 h-4" />
-            )}
-            Website
-          </button>
-        </div>
-      </div>
+        </Text>
+        <SegmentedControl
+          value={uploadType}
+          onChange={handleTypeChange}
+          disabled={isUpdating}
+          fullWidth
+          data={[
+            {
+              value: "documents",
+              label: (
+                <Center style={{ gap: 8 }}>
+                  {isUpdating && uploadType !== "documents" ? (
+                    <Loader size={14} />
+                  ) : (
+                    <IconFileText size={16} />
+                  )}
+                  <span>Dokumente</span>
+                </Center>
+              ),
+            },
+            {
+              value: "website",
+              label: (
+                <Center style={{ gap: 8 }}>
+                  {isUpdating && uploadType !== "website" ? (
+                    <Loader size={14} />
+                  ) : (
+                    <IconWorld size={16} />
+                  )}
+                  <span>Website</span>
+                </Center>
+              ),
+            },
+          ]}
+        />
+      </Paper>
 
       {/* Content based on type */}
       {uploadType === "documents" ? (
@@ -107,6 +108,6 @@ export function ContentSourceToggle({
       ) : (
         <WebsiteScraper chatId={chatId} sitemapUrls={sitemapUrls} />
       )}
-    </div>
+    </Stack>
   );
 }

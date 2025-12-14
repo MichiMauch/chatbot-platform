@@ -3,10 +3,18 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, MessageSquare } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  Button,
+  Paper,
+  TextInput,
+  Textarea,
+  Group,
+  Stack,
+  Text,
+  ThemeIcon,
+  Anchor,
+} from "@mantine/core";
+import { IconArrowLeft, IconMessageCircle } from "@tabler/icons-react";
 import { toast } from "sonner";
 
 export default function NewChatPage() {
@@ -60,104 +68,71 @@ export default function NewChatPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <Stack gap="md" maw={672} mx="auto">
       {/* Back Link */}
-      <Link
-        href="/dashboard/chats"
-        className="inline-flex items-center text-gray-500 hover:text-gray-700"
-      >
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Zurück zu Chats
-      </Link>
+      <Anchor component={Link} href="/dashboard/chats" c="dimmed" underline="never">
+        <Group gap="xs">
+          <IconArrowLeft size={16} />
+          Zurück zu Chats
+        </Group>
+      </Anchor>
 
-      {/* Form */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <MessageSquare className="w-6 h-6 text-blue-600" />
-            </div>
+      {/* Form Card */}
+      <Paper p="lg" withBorder>
+        <Stack gap="lg">
+          {/* Header */}
+          <Group>
+            <ThemeIcon size="xl" variant="light">
+              <IconMessageCircle size={24} />
+            </ThemeIcon>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">
-                Neuen Chat erstellen
-              </h1>
-              <p className="text-sm text-gray-500">
-                Erstelle einen neuen RAG-Chatbot
-              </p>
+              <Text fw={600} size="lg">Neuen Chat erstellen</Text>
+              <Text size="sm" c="dimmed">Erstelle einen neuen RAG-Chatbot</Text>
             </div>
-          </div>
-        </CardHeader>
+          </Group>
 
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <Input
-              id="displayName"
-              type="text"
-              label="Name"
-              placeholder="Mein Chatbot"
-              value={displayName}
-              onChange={(e) => handleDisplayNameChange(e.target.value)}
-              required
-            />
+          {/* Form */}
+          <form onSubmit={handleSubmit}>
+            <Stack gap="md">
+              <TextInput
+                label="Name"
+                placeholder="Mein Chatbot"
+                value={displayName}
+                onChange={(e) => handleDisplayNameChange(e.target.value)}
+                required
+              />
 
-            <div>
-              <label
-                htmlFor="name"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                URL-Name
-              </label>
-              <div className="flex items-center">
-                <span className="text-gray-500 text-sm mr-2">
-                  /c/
-                </span>
-                <input
-                  id="name"
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(slugify(e.target.value))}
-                  placeholder="mein-chatbot"
-                  required
-                  pattern="[a-z0-9-]+"
-                  className="flex-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-              <p className="mt-1 text-sm text-gray-500">
-                Dieser Name wird in der URL verwendet und kann nicht geändert
-                werden.
-              </p>
-            </div>
+              <TextInput
+                label="URL-Name"
+                leftSection={<Text size="sm" c="dimmed">/c/</Text>}
+                leftSectionWidth={40}
+                value={name}
+                onChange={(e) => setName(slugify(e.target.value))}
+                placeholder="mein-chatbot"
+                required
+                description="Dieser Name wird in der URL verwendet und kann nicht geändert werden."
+              />
 
-            <div>
-              <label
-                htmlFor="description"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Beschreibung (optional)
-              </label>
-              <textarea
-                id="description"
+              <Textarea
+                label="Beschreibung (optional)"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Beschreibe, wofür dieser Chatbot verwendet wird..."
                 rows={3}
-                className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
-            </div>
 
-            <div className="flex justify-end space-x-3">
-              <Link href="/dashboard/chats">
-                <Button type="button" variant="outline">
+              <Group justify="flex-end">
+                <Button variant="outline" component={Link} href="/dashboard/chats">
                   Abbrechen
                 </Button>
-              </Link>
-              <Button type="submit" isLoading={isLoading}>
-                Chat erstellen
-              </Button>
-            </div>
+                <Button type="submit" loading={isLoading}>
+                  Chat erstellen
+                </Button>
+              </Group>
+            </Stack>
           </form>
-        </CardContent>
-      </Card>
-    </div>
+        </Stack>
+      </Paper>
+    </Stack>
   );
 }

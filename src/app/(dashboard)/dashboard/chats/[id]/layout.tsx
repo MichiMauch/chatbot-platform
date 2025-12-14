@@ -1,16 +1,20 @@
 import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
+import { Stack } from "@mantine/core";
 import { db } from "@/lib/db";
 import { chats, teamMembers, teams } from "@/lib/schema";
 import { eq } from "drizzle-orm";
-import { AppearanceSettings } from "./AppearanceSettings";
+import { ChatTabs } from "./ChatTabs";
+import { SetPageTitle } from "@/components/SetPageTitle";
 import { getPlan } from "@/lib/stripe";
+import { SettingsSaveProvider } from "@/contexts/SettingsSaveContext";
 
-interface ChatSettingsPageProps {
+interface ChatLayoutProps {
+  children: React.ReactNode;
   params: Promise<{ id: string }>;
 }
 
-export default async function ChatSettingsPage({ params }: ChatSettingsPageProps) {
+export default async function ChatLayout({ children, params }: ChatLayoutProps) {
   const { id } = await params;
   const session = await auth();
 
@@ -36,16 +40,35 @@ export default async function ChatSettingsPage({ params }: ChatSettingsPageProps
     notFound();
   }
 
-  // Load team to check plan
+  // Team laden für Plan-Check
   const team = await db.query.teams.findFirst({
     where: eq(teams.id, chat.teamId),
   });
 
   const plan = getPlan(team?.plan || "free");
   const allowPublicChats = plan.limits.allowPublicChats;
-  const allowEmbed = plan.limits.allowEmbed;
 
   return (
-    <AppearanceSettings chat={chat} allowPublicChats={allowPublicChats} allowEmbed={allowEmbed} />
+    <>
+      <SetPageTitle
+        title={chat.displayName}
+        chatData={{
+          chatId: chat.id,
+          chatSlug: chat.name,
+          isPublic: chat.isPublic ?? true,
+          allowPublicChats,
+        }}
+      />
+
+      <SettingsSaveProvider>
+        <Stack gap="md">
+          {/* Tabs */}
+          <ChatTabs chatId={id} />
+
+          {/* Content */}
+          {children}
+        </Stack>
+      </SettingsSaveProvider>
+    </>
   );
 }

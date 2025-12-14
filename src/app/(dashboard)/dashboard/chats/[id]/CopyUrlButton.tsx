@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ActionIcon, Tooltip } from "@mantine/core";
+import { IconCopy, IconCheck } from "@tabler/icons-react";
 import { toast } from "sonner";
 
 interface CopyUrlButtonProps {
@@ -21,12 +21,10 @@ export function CopyUrlButton({ url }: CopyUrlButtonProps) {
   };
 
   return (
-    <Button variant="outline" onClick={handleCopy}>
-      {copied ? (
-        <Check className="w-4 h-4 text-green-600" />
-      ) : (
-        <Copy className="w-4 h-4" />
-      )}
-    </Button>
+    <Tooltip label={copied ? "Kopiert!" : "URL kopieren"}>
+      <ActionIcon variant="light" color={copied ? "green" : "gray"} onClick={handleCopy}>
+        {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
+      </ActionIcon>
+    </Tooltip>
   );
 }

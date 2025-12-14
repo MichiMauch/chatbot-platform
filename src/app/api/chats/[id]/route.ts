@@ -183,20 +183,34 @@ export async function PATCH(
       calendarLink,
       newsletterEnabled,
       newsletterTrigger,
+      widgetEnabled,
+      embedEnabled,
+      widgetBubbleText,
     } = body;
+
+    // Load team for plan checks
+    const team = await withRetry(() =>
+      db.query.teams.findFirst({
+        where: eq(teams.id, chat.teamId),
+      })
+    );
+    const plan = getPlan(team?.plan || "free");
 
     // Check plan limits for public chats
     if (isPublic === true || allowAnonymous === true) {
-      const team = await withRetry(() =>
-        db.query.teams.findFirst({
-          where: eq(teams.id, chat.teamId),
-        })
-      );
-
-      const plan = getPlan(team?.plan || "free");
       if (!plan.limits.allowPublicChats) {
         return NextResponse.json(
           { error: "Öffentliche Chats sind in Ihrem Plan nicht verfügbar. Bitte upgraden Sie." },
+          { status: 403 }
+        );
+      }
+    }
+
+    // Check plan limits for embed
+    if (embedEnabled === true) {
+      if (!plan.limits.allowEmbed) {
+        return NextResponse.json(
+          { error: "Embed ist in Ihrem Plan nicht verfügbar. Bitte upgraden Sie." },
           { status: 403 }
         );
       }
@@ -227,6 +241,9 @@ export async function PATCH(
     if (calendarLink !== undefined) updateData.calendarLink = calendarLink?.trim() || null;
     if (newsletterEnabled !== undefined) updateData.newsletterEnabled = newsletterEnabled;
     if (newsletterTrigger !== undefined) updateData.newsletterTrigger = newsletterTrigger;
+    if (widgetEnabled !== undefined) updateData.widgetEnabled = widgetEnabled;
+    if (embedEnabled !== undefined) updateData.embedEnabled = embedEnabled;
+    if (widgetBubbleText !== undefined) updateData.widgetBubbleText = widgetBubbleText?.trim() || null;
 
     // Immer updatedAt aktualisieren
     await withRetry(() =>

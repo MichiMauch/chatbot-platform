@@ -1,8 +1,31 @@
 "use client";
 
 import { useState } from "react";
-import { Users, Download, Mail, Phone, MessageSquare, Trash2, Check, Clock, UserCheck } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import {
+  Paper,
+  Stack,
+  Group,
+  Text,
+  Table,
+  Select,
+  Button,
+  ActionIcon,
+  Badge,
+  ThemeIcon,
+  Avatar,
+  Anchor,
+} from "@mantine/core";
+import {
+  IconUsers,
+  IconDownload,
+  IconMail,
+  IconPhone,
+  IconMessage,
+  IconTrash,
+  IconClock,
+  IconUserCheck,
+  IconCheck,
+} from "@tabler/icons-react";
 
 interface Lead {
   id: string;
@@ -27,10 +50,10 @@ interface LeadsTableProps {
   chats: Chat[];
 }
 
-const statusLabels: Record<string, { label: string; color: string; icon: typeof Clock }> = {
-  new: { label: "Neu", color: "bg-blue-100 text-blue-700", icon: Clock },
-  contacted: { label: "Kontaktiert", color: "bg-yellow-100 text-yellow-700", icon: UserCheck },
-  converted: { label: "Konvertiert", color: "bg-green-100 text-green-700", icon: Check },
+const statusConfig: Record<string, { label: string; color: string; icon: typeof IconClock }> = {
+  new: { label: "Neu", color: "blue", icon: IconClock },
+  contacted: { label: "Kontaktiert", color: "yellow", icon: IconUserCheck },
+  converted: { label: "Konvertiert", color: "green", icon: IconCheck },
 };
 
 const sourceLabels: Record<string, string> = {
@@ -40,8 +63,8 @@ const sourceLabels: Record<string, string> = {
 };
 
 export default function LeadsTable({ leads, chats }: LeadsTableProps) {
-  const [filterChat, setFilterChat] = useState<string>("all");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterChat, setFilterChat] = useState<string | null>("all");
+  const [filterStatus, setFilterStatus] = useState<string | null>("all");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [localLeads, setLocalLeads] = useState(leads);
@@ -54,7 +77,8 @@ export default function LeadsTable({ leads, chats }: LeadsTableProps) {
   });
 
   // Update lead status
-  async function handleStatusChange(leadId: string, newStatus: string) {
+  async function handleStatusChange(leadId: string, newStatus: string | null) {
+    if (!newStatus) return;
     setUpdatingId(leadId);
     try {
       const response = await fetch(`/api/leads/${leadId}`, {
@@ -106,7 +130,7 @@ export default function LeadsTable({ leads, chats }: LeadsTableProps) {
       lead.phone || "",
       lead.chatName,
       sourceLabels[lead.source] || lead.source,
-      statusLabels[lead.status || "new"]?.label || lead.status,
+      statusConfig[lead.status || "new"]?.label || lead.status,
       lead.message?.replace(/"/g, '""') || "",
       lead.createdAt ? new Date(lead.createdAt).toLocaleString("de-CH") : "",
     ]);
@@ -127,173 +151,177 @@ export default function LeadsTable({ leads, chats }: LeadsTableProps) {
 
   if (localLeads.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
-          <Users className="w-8 h-8 text-gray-400" />
-        </div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">
-          Noch keine Leads
-        </h3>
-        <p className="text-gray-500 max-w-sm mx-auto">
-          Sobald Besucher das Kontaktformular in deinen Chats ausfüllen,
-          erscheinen sie hier.
-        </p>
-      </div>
+      <Paper p="xl" withBorder ta="center">
+        <Stack align="center" gap="md">
+          <ThemeIcon size={64} radius="xl" variant="light" color="gray">
+            <IconUsers size={32} />
+          </ThemeIcon>
+          <div>
+            <Text fw={500} size="lg">
+              Noch keine Leads
+            </Text>
+            <Text c="dimmed" size="sm" maw={300} mx="auto" mt="xs">
+              Sobald Besucher das Kontaktformular in deinen Chats ausfüllen,
+              erscheinen sie hier.
+            </Text>
+          </div>
+        </Stack>
+      </Paper>
     );
   }
 
+  const chatSelectData = [
+    { value: "all", label: "Alle Chats" },
+    ...chats.map((chat) => ({ value: chat.id, label: chat.displayName })),
+  ];
+
+  const statusSelectData = [
+    { value: "all", label: "Alle Status" },
+    { value: "new", label: "Neu" },
+    { value: "contacted", label: "Kontaktiert" },
+    { value: "converted", label: "Konvertiert" },
+  ];
+
   return (
-    <div className="space-y-4">
+    <Stack gap="md">
       {/* Filters and Export */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div className="flex flex-wrap gap-3">
-          {/* Chat Filter */}
-          <select
+      <Group justify="space-between" wrap="wrap">
+        <Group gap="sm">
+          <Select
             value={filterChat}
-            onChange={(e) => setFilterChat(e.target.value)}
-            className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">Alle Chats</option>
-            {chats.map((chat) => (
-              <option key={chat.id} value={chat.id}>
-                {chat.displayName}
-              </option>
-            ))}
-          </select>
-
-          {/* Status Filter */}
-          <select
+            onChange={setFilterChat}
+            data={chatSelectData}
+            size="sm"
+            w={180}
+          />
+          <Select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">Alle Status</option>
-            <option value="new">Neu</option>
-            <option value="contacted">Kontaktiert</option>
-            <option value="converted">Konvertiert</option>
-          </select>
-        </div>
-
-        <Button variant="outline" onClick={handleExport}>
-          <Download className="w-4 h-4 mr-2" />
+            onChange={setFilterStatus}
+            data={statusSelectData}
+            size="sm"
+            w={150}
+          />
+        </Group>
+        <Button variant="outline" leftSection={<IconDownload size={16} />} onClick={handleExport}>
           CSV Export
         </Button>
-      </div>
+      </Group>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Kontakt
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Chat
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Quelle
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Datum/Zeit
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Aktionen
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
+      <Paper withBorder>
+        <Table.ScrollContainer minWidth={800}>
+          <Table striped highlightOnHover>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Kontakt</Table.Th>
+                <Table.Th>Chat</Table.Th>
+                <Table.Th>Quelle</Table.Th>
+                <Table.Th>Status</Table.Th>
+                <Table.Th>Datum/Zeit</Table.Th>
+                <Table.Th ta="right">Aktionen</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
               {filteredLeads.map((lead) => {
-                const statusInfo = statusLabels[lead.status || "new"] || statusLabels.new;
-                const StatusIcon = statusInfo.icon;
+                const statusInfo = statusConfig[lead.status || "new"] || statusConfig.new;
 
                 return (
-                  <tr key={lead.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-4">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                          <Users className="w-5 h-5 text-gray-500" />
-                        </div>
-                        <div className="ml-3">
-                          <p className="text-sm font-medium text-gray-900">
+                  <Table.Tr key={lead.id}>
+                    <Table.Td>
+                      <Group gap="sm" wrap="nowrap">
+                        <Avatar radius="xl" color="gray">
+                          <IconUsers size={20} />
+                        </Avatar>
+                        <div>
+                          <Text size="sm" fw={500}>
                             {lead.name}
-                          </p>
-                          <div className="flex items-center gap-3 text-xs text-gray-500">
-                            <a
-                              href={`mailto:${lead.email}`}
-                              className="flex items-center gap-1 hover:text-blue-600"
-                            >
-                              <Mail className="w-3 h-3" />
-                              {lead.email}
-                            </a>
+                          </Text>
+                          <Group gap="md">
+                            <Anchor href={`mailto:${lead.email}`} size="xs" c="dimmed">
+                              <Group gap={4}>
+                                <IconMail size={12} />
+                                {lead.email}
+                              </Group>
+                            </Anchor>
                             {lead.phone && (
-                              <a
-                                href={`tel:${lead.phone}`}
-                                className="flex items-center gap-1 hover:text-blue-600"
-                              >
-                                <Phone className="w-3 h-3" />
-                                {lead.phone}
-                              </a>
+                              <Anchor href={`tel:${lead.phone}`} size="xs" c="dimmed">
+                                <Group gap={4}>
+                                  <IconPhone size={12} />
+                                  {lead.phone}
+                                </Group>
+                              </Anchor>
                             )}
-                          </div>
+                          </Group>
                           {lead.message && (
-                            <p className="text-xs text-gray-400 mt-1 line-clamp-1 max-w-xs">
-                              <MessageSquare className="w-3 h-3 inline mr-1" />
+                            <Text size="xs" c="dimmed" mt={4} lineClamp={1} maw={250}>
+                              <IconMessage size={12} style={{ display: "inline", marginRight: 4 }} />
                               {lead.message}
-                            </p>
+                            </Text>
                           )}
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 text-sm text-gray-600">
-                      {lead.chatName}
-                    </td>
-                    <td className="px-4 py-4 text-sm text-gray-600">
-                      {sourceLabels[lead.source] || lead.source}
-                    </td>
-                    <td className="px-4 py-4">
-                      <select
+                      </Group>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm">{lead.chatName}</Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm">{sourceLabels[lead.source] || lead.source}</Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Select
+                        size="xs"
                         value={lead.status || "new"}
-                        onChange={(e) => handleStatusChange(lead.id, e.target.value)}
+                        onChange={(val) => handleStatusChange(lead.id, val)}
                         disabled={updatingId === lead.id}
-                        className={`px-2 py-1 rounded-full text-xs font-medium border-0 cursor-pointer ${statusInfo.color} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                      >
-                        <option value="new">Neu</option>
-                        <option value="contacted">Kontaktiert</option>
-                        <option value="converted">Konvertiert</option>
-                      </select>
-                    </td>
-                    <td className="px-4 py-4 text-sm text-gray-500">
-                      {lead.createdAt
-                        ? new Date(lead.createdAt).toLocaleString("de-CH")
-                        : "-"}
-                    </td>
-                    <td className="px-4 py-4 text-right">
-                      <button
-                        onClick={() => handleDelete(lead.id)}
-                        disabled={deletingId === lead.id}
-                        className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 disabled:opacity-50"
-                        title="Löschen"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
+                        data={[
+                          { value: "new", label: "Neu" },
+                          { value: "contacted", label: "Kontaktiert" },
+                          { value: "converted", label: "Konvertiert" },
+                        ]}
+                        w={130}
+                        styles={{
+                          input: {
+                            backgroundColor: `var(--mantine-color-${statusInfo.color}-0)`,
+                            color: `var(--mantine-color-${statusInfo.color}-7)`,
+                            fontWeight: 500,
+                          },
+                        }}
+                      />
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm" c="dimmed">
+                        {lead.createdAt
+                          ? new Date(lead.createdAt).toLocaleString("de-CH")
+                          : "-"}
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Group justify="flex-end">
+                        <ActionIcon
+                          variant="subtle"
+                          color="red"
+                          onClick={() => handleDelete(lead.id)}
+                          loading={deletingId === lead.id}
+                          title="Löschen"
+                        >
+                          <IconTrash size={16} />
+                        </ActionIcon>
+                      </Group>
+                    </Table.Td>
+                  </Table.Tr>
                 );
               })}
-            </tbody>
-          </table>
-        </div>
+            </Table.Tbody>
+          </Table>
+        </Table.ScrollContainer>
 
         {/* Footer with count */}
-        <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 text-sm text-gray-500">
-          {filteredLeads.length} von {localLeads.length} Leads
-        </div>
-      </div>
-    </div>
+        <Group p="sm" bg="gray.0" style={{ borderTop: "1px solid var(--mantine-color-gray-3)" }}>
+          <Text size="sm" c="dimmed">
+            {filteredLeads.length} von {localLeads.length} Leads
+          </Text>
+        </Group>
+      </Paper>
+    </Stack>
   );
 }

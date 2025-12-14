@@ -159,9 +159,15 @@ export const chats = sqliteTable("chats", {
   // Lead Generation
   leadCaptureEnabled: integer("lead_capture_enabled", { mode: "boolean" }).default(false),
   leadCaptureTrigger: text("lead_capture_trigger"), // "2" | "5" | "10" | "exit" | null
+  calendarEnabled: integer("calendar_enabled", { mode: "boolean" }).default(false),
   calendarLink: text("calendar_link"), // External calendar booking link
   newsletterEnabled: integer("newsletter_enabled", { mode: "boolean" }).default(false),
   newsletterTrigger: text("newsletter_trigger"), // "2" | "5" | "10" | "exit" | null
+
+  // Embed Settings
+  widgetEnabled: integer("widget_enabled", { mode: "boolean" }).default(false),
+  embedEnabled: integer("embed_enabled", { mode: "boolean" }).default(false),
+  widgetBubbleText: text("widget_bubble_text"), // Speech bubble text for widget
 
   // Metadata
   files: text("files"), // JSON array

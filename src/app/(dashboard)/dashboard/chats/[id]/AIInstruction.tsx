@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Paper, Text, Textarea, Button, Group, Stack } from "@mantine/core";
+import { IconDeviceFloppy } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { systemInstructionTemplates } from "@/lib/systemInstructionTemplates";
 
@@ -56,52 +56,56 @@ export function AIInstruction({ chatId, initialInstruction }: AIInstructionProps
   };
 
   return (
-    <section className="bg-white rounded-xl border border-gray-200 p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">
-        KI-Anweisung
-      </h2>
-      <p className="text-sm text-gray-500 mb-4">
-        Definiere, wie sich der Chatbot verhalten soll. Diese Anweisung wird bei jeder Antwort berücksichtigt.
-      </p>
-
-      {/* Template-Auswahl */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Vorlage wählen
-        </label>
-        <div className="flex flex-wrap gap-2">
-          {systemInstructionTemplates.map((template) => (
-            <button
-              key={template.id}
-              onClick={() => applyTemplate(template.id)}
-              className={`px-3 py-1.5 text-sm rounded-lg border transition-all ${
-                selectedTemplate === template.id
-                  ? "bg-blue-50 border-blue-500 text-blue-700 ring-2 ring-blue-500"
-                  : "border-gray-200 hover:bg-gray-50 hover:border-gray-300"
-              }`}
-            >
-              {template.name}
-            </button>
-          ))}
+    <Paper p="md" withBorder>
+      <Stack gap="sm">
+        <div>
+          <Text size="lg" fw={600}>KI-Anweisung</Text>
+          <Text size="sm" c="dimmed">
+            Definiere, wie sich der Chatbot verhalten soll. Diese Anweisung wird bei jeder Antwort berücksichtigt.
+          </Text>
         </div>
-      </div>
 
-      {/* Textarea */}
-      <textarea
-        value={systemInstruction}
-        onChange={(e) => setSystemInstruction(e.target.value)}
-        placeholder="z.B. Du bist ein freundlicher Assistent, der Fragen zu unseren Produkten beantwortet..."
-        rows={5}
-        className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono text-sm"
-      />
+        {/* Template-Auswahl */}
+        <div>
+          <Text size="sm" fw={500} mb="xs">
+            Vorlage wählen
+          </Text>
+          <Group gap="xs">
+            {systemInstructionTemplates.map((template) => (
+              <Button
+                key={template.id}
+                variant={selectedTemplate === template.id ? "filled" : "light"}
+                color={selectedTemplate === template.id ? "blue" : "gray"}
+                size="xs"
+                onClick={() => applyTemplate(template.id)}
+              >
+                {template.name}
+              </Button>
+            ))}
+          </Group>
+        </div>
 
-      {/* Speichern-Button */}
-      <div className="flex justify-end mt-4">
-        <Button onClick={handleSave} isLoading={isSaving}>
-          <Save className="w-4 h-4 mr-2" />
-          Speichern
-        </Button>
-      </div>
-    </section>
+        {/* Textarea */}
+        <Textarea
+          value={systemInstruction}
+          onChange={(e) => setSystemInstruction(e.target.value)}
+          placeholder="z.B. Du bist ein freundlicher Assistent, der Fragen zu unseren Produkten beantwortet..."
+          minRows={5}
+          autosize
+          styles={{ input: { fontFamily: "monospace" } }}
+        />
+
+        {/* Speichern-Button */}
+        <Group justify="flex-end">
+          <Button
+            leftSection={<IconDeviceFloppy size={16} />}
+            loading={isSaving}
+            onClick={handleSave}
+          >
+            Speichern
+          </Button>
+        </Group>
+      </Stack>
+    </Paper>
   );
 }

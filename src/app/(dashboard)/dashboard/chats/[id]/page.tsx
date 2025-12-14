@@ -1,14 +1,11 @@
 import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft, ExternalLink, MessageSquare } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { db } from "@/lib/db";
 import { chats, teamMembers } from "@/lib/schema";
 import { eq } from "drizzle-orm";
+import { Paper, Stack, Text, Code, Group, SimpleGrid } from "@mantine/core";
 import { CopyUrlButton } from "./CopyUrlButton";
 import { ContentSourceToggle } from "./ContentSourceToggle";
-import { ChatNavigation } from "./ChatNavigation";
 import { AIInstruction } from "./AIInstruction";
 
 interface ChatDetailPageProps {
@@ -44,61 +41,25 @@ export default async function ChatDetailPage({ params }: ChatDetailPageProps) {
   const publicUrl = `/c/${chat.name}`;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Back Link */}
-      <Link
-        href="/dashboard/chats"
-        className="inline-flex items-center text-gray-500 hover:text-gray-700"
-      >
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Zurück zu Chats
-      </Link>
-
-      {/* Header */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="p-3 bg-blue-100 rounded-xl">
-              <MessageSquare className="w-8 h-8 text-blue-600" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                {chat.displayName}
-              </h1>
-              {chat.description && (
-                <p className="text-gray-500 mt-1">{chat.description}</p>
-              )}
-            </div>
-          </div>
-          <Link href={publicUrl} target="_blank">
-            <Button variant="outline">
-              <ExternalLink className="w-4 h-4 mr-2" />
-              Chat öffnen
-            </Button>
-          </Link>
-        </div>
-
-        {/* Navigation */}
-        <div className="mt-6 pt-4 border-t border-gray-100">
-          <ChatNavigation chatId={chat.id} />
-        </div>
-      </div>
-
+    <Stack gap="md">
       {/* Public URL */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
+      <Paper p="md" withBorder>
+        <Text size="lg" fw={600} mb="sm">
           Öffentliche URL
-        </h2>
-        <div className="flex items-center gap-3">
-          <code className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 font-mono text-sm text-gray-700">
+        </Text>
+        <Group gap="sm">
+          <Code
+            block
+            style={{ flex: 1, padding: "12px 16px", fontSize: "14px" }}
+          >
             {publicUrl}
-          </code>
+          </Code>
           <CopyUrlButton url={publicUrl} />
-        </div>
-        <p className="text-sm text-gray-500 mt-2">
+        </Group>
+        <Text size="sm" c="dimmed" mt="xs">
           Teile diese URL, damit andere mit deinem Chatbot chatten können.
-        </p>
-      </div>
+        </Text>
+      </Paper>
 
       {/* Content Source (Documents or Website) */}
       <ContentSourceToggle
@@ -115,20 +76,20 @@ export default async function ChatDetailPage({ params }: ChatDetailPageProps) {
       />
 
       {/* Info */}
-      <div className="bg-gray-50 rounded-xl border border-gray-200 p-6">
-        <div className="grid grid-cols-2 gap-4 text-sm">
+      <Paper p="md" withBorder bg="gray.0">
+        <SimpleGrid cols={2}>
           <div>
-            <span className="text-gray-500">Erstellt am:</span>
-            <span className="ml-2 text-gray-900">
+            <Text size="sm" c="dimmed">Erstellt am:</Text>
+            <Text size="sm" fw={500}>
               {chat.createdAt.toLocaleDateString("de-CH")}
-            </span>
+            </Text>
           </div>
           <div>
-            <span className="text-gray-500">URL-Name:</span>
-            <span className="ml-2 text-gray-900 font-mono">{chat.name}</span>
+            <Text size="sm" c="dimmed">URL-Name:</Text>
+            <Text size="sm" fw={500} ff="monospace">{chat.name}</Text>
           </div>
-        </div>
-      </div>
-    </div>
+        </SimpleGrid>
+      </Paper>
+    </Stack>
   );
 }

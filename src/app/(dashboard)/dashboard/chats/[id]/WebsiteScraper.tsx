@@ -3,16 +3,27 @@
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Globe,
-  Search,
-  Loader2,
-  Trash2,
-  ExternalLink,
-  RefreshCw,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-} from "lucide-react";
+  Paper,
+  Text,
+  TextInput,
+  Select,
+  Button,
+  ActionIcon,
+  Alert,
+  Stack,
+  Group,
+  Loader,
+  Anchor,
+  Box,
+} from "@mantine/core";
+import {
+  IconWorld,
+  IconSearch,
+  IconCheck,
+  IconX,
+  IconExternalLink,
+  IconTrash,
+} from "@tabler/icons-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
@@ -51,7 +62,7 @@ export function WebsiteScraper({ chatId, sitemapUrls }: WebsiteScraperProps) {
     urlCount?: number;
     error?: string;
   } | null>(null);
-  const [maxPages, setMaxPages] = useState(50);
+  const [maxPages, setMaxPages] = useState("50");
 
   // Scraping progress
   const [scrapeProgress, setScrapeProgress] = useState<{
@@ -152,7 +163,7 @@ export function WebsiteScraper({ chatId, sitemapUrls }: WebsiteScraperProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sitemapUrl,
-          maxPages,
+          maxPages: Number(maxPages),
         }),
       });
 
@@ -209,211 +220,172 @@ export function WebsiteScraper({ chatId, sitemapUrls }: WebsiteScraperProps) {
   };
 
   return (
-    <section className="bg-white rounded-xl border border-gray-200 p-6">
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="text-lg font-semibold text-gray-900">Website scrapen</h2>
+    <Paper p="md" withBorder>
+      <Group justify="space-between" mb="xs">
+        <Text size="lg" fw={600}>Website scrapen</Text>
         {pages.length > 0 && (
-          <span className="text-sm text-gray-500">
+          <Text size="sm" c="dimmed">
             {pages.length} {pages.length === 1 ? "Seite" : "Seiten"} gescrapet
-          </span>
+          </Text>
         )}
-      </div>
-      <p className="text-sm text-gray-500 mb-4">
+      </Group>
+      <Text size="sm" c="dimmed" mb="md">
         Scrape eine Website via Sitemap, um den Inhalt für den Chatbot
         verfügbar zu machen
-      </p>
+      </Text>
 
-      {/* Website URL Input */}
-      <div className="space-y-4 mb-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Website URL
-          </label>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="url"
-                value={websiteUrl}
-                onChange={(e) => setWebsiteUrl(e.target.value)}
-                placeholder="https://example.com"
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                disabled={isScraping}
-              />
-            </div>
-            <button
-              onClick={findSitemap}
-              disabled={!websiteUrl || isChecking || isScraping}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {isChecking ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Search className="w-4 h-4" />
-              )}
-              Sitemap finden
-            </button>
-          </div>
-        </div>
+      {/* Form */}
+      <Stack gap="sm" mb="lg">
+        {/* Website URL Input */}
+        <Group gap="xs" align="flex-end">
+          <TextInput
+            id="website-url"
+            label="Website URL"
+            placeholder="https://example.com"
+            value={websiteUrl}
+            onChange={(e) => setWebsiteUrl(e.target.value)}
+            leftSection={<IconWorld size={16} />}
+            disabled={isScraping}
+            style={{ flex: 1 }}
+          />
+          <Button
+            variant="light"
+            onClick={findSitemap}
+            disabled={!websiteUrl || isChecking || isScraping}
+            loading={isChecking}
+            leftSection={!isChecking && <IconSearch size={16} />}
+          >
+            Sitemap finden
+          </Button>
+        </Group>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Sitemap URL
-          </label>
-          <div className="flex gap-2">
-            <input
-              type="url"
-              value={sitemapUrl}
-              onChange={(e) => {
-                setSitemapUrl(e.target.value);
-                setSitemapInfo(null);
-              }}
-              placeholder="https://example.com/sitemap.xml"
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              disabled={isScraping}
-            />
-            <button
-              onClick={() => checkSitemap()}
-              disabled={!sitemapUrl || isChecking || isScraping}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {isChecking ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <CheckCircle className="w-4 h-4" />
-              )}
-              Prüfen
-            </button>
-          </div>
-        </div>
+        {/* Sitemap URL Input */}
+        <Group gap="xs" align="flex-end">
+          <TextInput
+            id="sitemap-url"
+            label="Sitemap URL"
+            placeholder="https://example.com/sitemap.xml"
+            value={sitemapUrl}
+            onChange={(e) => {
+              setSitemapUrl(e.target.value);
+              setSitemapInfo(null);
+            }}
+            disabled={isScraping}
+            style={{ flex: 1 }}
+          />
+          <Button
+            variant="light"
+            onClick={() => checkSitemap()}
+            disabled={!sitemapUrl || isChecking || isScraping}
+            loading={isChecking}
+            leftSection={!isChecking && <IconCheck size={16} />}
+          >
+            Prüfen
+          </Button>
+        </Group>
 
         {/* Sitemap Info */}
         {sitemapInfo && (
-          <div
-            className={`p-3 rounded-lg flex items-center gap-2 ${
-              sitemapInfo.valid
-                ? "bg-green-50 text-green-700"
-                : "bg-red-50 text-red-700"
-            }`}
+          <Alert
+            color={sitemapInfo.valid ? "green" : "red"}
+            icon={sitemapInfo.valid ? <IconCheck size={16} /> : <IconX size={16} />}
           >
-            {sitemapInfo.valid ? (
-              <>
-                <CheckCircle className="w-4 h-4" />
-                <span>{sitemapInfo.urlCount} URLs in der Sitemap gefunden</span>
-              </>
-            ) : (
-              <>
-                <XCircle className="w-4 h-4" />
-                <span>{sitemapInfo.error || "Ungültige Sitemap"}</span>
-              </>
-            )}
-          </div>
+            {sitemapInfo.valid
+              ? `${sitemapInfo.urlCount} URLs in der Sitemap gefunden`
+              : sitemapInfo.error || "Ungültige Sitemap"}
+          </Alert>
         )}
 
         {/* Max Pages */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Maximale Seitenanzahl
-          </label>
-          <select
-            value={maxPages}
-            onChange={(e) => setMaxPages(Number(e.target.value))}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            disabled={isScraping}
-          >
-            <option value={10}>10 Seiten</option>
-            <option value={25}>25 Seiten</option>
-            <option value={50}>50 Seiten</option>
-            <option value={100}>100 Seiten</option>
-            <option value={200}>200 Seiten</option>
-          </select>
-        </div>
+        <Select
+          id="max-pages"
+          label="Maximale Seitenanzahl"
+          value={maxPages}
+          onChange={(value) => setMaxPages(value || "50")}
+          disabled={isScraping}
+          data={[
+            { value: "10", label: "10 Seiten" },
+            { value: "25", label: "25 Seiten" },
+            { value: "50", label: "50 Seiten" },
+            { value: "100", label: "100 Seiten" },
+            { value: "200", label: "200 Seiten" },
+          ]}
+          w={200}
+        />
 
         {/* Start Button */}
-        <button
+        <Button
+          fullWidth
+          size="md"
           onClick={startScraping}
           disabled={!sitemapInfo?.valid || isScraping}
-          className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
+          loading={isScraping}
+          leftSection={!isScraping && <IconWorld size={20} />}
         >
-          {isScraping ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin" />
-              {scrapeProgress?.status || "Scraping läuft..."}
-            </>
-          ) : (
-            <>
-              <Globe className="w-5 h-5" />
-              Scraping starten
-            </>
-          )}
-        </button>
-      </div>
+          {isScraping ? (scrapeProgress?.status || "Scraping läuft...") : "Scraping starten"}
+        </Button>
+      </Stack>
 
       {/* Scraped Pages List */}
       {isLoading ? (
-        <div className="flex justify-center py-8">
-          <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
-        </div>
+        <Group justify="center" py="xl">
+          <Loader size="sm" />
+        </Group>
       ) : pages.length > 0 ? (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between py-2">
-            <h3 className="text-sm font-medium text-gray-700">
-              Gescrapte Seiten
-            </h3>
-          </div>
-          <div className="max-h-[400px] overflow-y-auto space-y-2">
-            {pages.map((page) => (
-              <div
-                key={page.id}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-              >
-                <div className="flex-1 min-w-0 mr-4">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {page.title || page.displayName || "Ohne Titel"}
-                  </p>
-                  <a
-                    href={page.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-blue-600 hover:underline truncate block"
-                  >
-                    {page.url}
-                  </a>
-                  <p className="text-xs text-gray-500">
-                    Gescrapt:{" "}
-                    {new Date(page.lastScrapedAt).toLocaleDateString("de-CH")}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <a
-                    href={page.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                    title="Öffnen"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </a>
-                  <button
-                    onClick={() => setDeleteTarget(page)}
-                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Löschen"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <Stack gap="xs">
+          <Text size="sm" fw={500} c="dimmed">Gescrapte Seiten</Text>
+          <Box mah={400} style={{ overflowY: "auto" }}>
+            <Stack gap="xs">
+              {pages.map((page) => (
+                <Paper key={page.id} p="sm" bg="gray.0" radius="md">
+                  <Group justify="space-between" wrap="nowrap">
+                    <Box style={{ flex: 1, minWidth: 0 }}>
+                      <Text size="sm" fw={500} truncate>
+                        {page.title || page.displayName || "Ohne Titel"}
+                      </Text>
+                      <Anchor
+                        href={page.url}
+                        target="_blank"
+                        size="xs"
+                        style={{ display: "block" }}
+                        truncate
+                      >
+                        {page.url}
+                      </Anchor>
+                      <Text size="xs" c="dimmed">
+                        Gescrapt: {new Date(page.lastScrapedAt).toLocaleDateString("de-CH")}
+                      </Text>
+                    </Box>
+                    <Group gap="xs" wrap="nowrap">
+                      <ActionIcon
+                        variant="subtle"
+                        color="gray"
+                        component="a"
+                        href={page.url}
+                        target="_blank"
+                      >
+                        <IconExternalLink size={16} />
+                      </ActionIcon>
+                      <ActionIcon
+                        variant="subtle"
+                        color="red"
+                        onClick={() => setDeleteTarget(page)}
+                      >
+                        <IconTrash size={16} />
+                      </ActionIcon>
+                    </Group>
+                  </Group>
+                </Paper>
+              ))}
+            </Stack>
+          </Box>
+        </Stack>
       ) : (
-        <div className="text-center py-8 text-gray-500">
-          <Globe className="w-10 h-10 mx-auto mb-2 text-gray-300" />
-          <p>Noch keine Seiten gescrapet</p>
-          <p className="text-sm">
-            Gib eine Website-URL ein, um zu beginnen
-          </p>
-        </div>
+        <Stack align="center" py="xl" c="dimmed">
+          <IconWorld size={40} stroke={1.5} />
+          <Text>Noch keine Seiten gescrapet</Text>
+          <Text size="sm">Gib eine Website-URL ein, um zu beginnen</Text>
+        </Stack>
       )}
 
       {/* Delete Confirmation */}
@@ -428,6 +400,6 @@ export function WebsiteScraper({ chatId, sitemapUrls }: WebsiteScraperProps) {
         variant="danger"
         isLoading={isDeleting}
       />
-    </section>
+    </Paper>
   );
 }

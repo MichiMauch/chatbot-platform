@@ -20,13 +20,6 @@ import {
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 
-const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Chats", href: "/dashboard/chats", icon: MessageSquare },
-  { name: "Leads", href: "/dashboard/leads", icon: Target },
-  { name: "Team", href: "/dashboard/team", icon: Users },
-];
-
 const profileMenuItems = [
   { name: "Upgrade", href: "/dashboard/upgrade", icon: Sparkles },
   { name: "Einstellungen", href: "/dashboard/settings", icon: Settings },
@@ -55,30 +48,67 @@ export function Sidebar() {
     <div className="flex flex-col h-full bg-gray-900 text-white w-64">
       {/* Logo */}
       <div className="flex items-center h-16 px-6 border-b border-gray-800">
-        <MessageSquare className="w-8 h-8 text-blue-500" />
+        <MessageSquare className="w-8 h-8 text-cyan-500" />
         <span className="ml-3 text-xl font-bold">ChatBot</span>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-1">
-        {navigation.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={cn(
-                "flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                isActive
-                  ? "bg-gray-800 text-white"
-                  : "text-gray-400 hover:bg-gray-800 hover:text-white"
-              )}
-            >
-              <item.icon className="w-5 h-5 mr-3" />
-              {item.name}
-            </Link>
-          );
-        })}
+      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        {/* Dashboard */}
+        <Link
+          href="/dashboard"
+          className={cn(
+            "flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+            pathname === "/dashboard"
+              ? "bg-gray-800 text-white"
+              : "text-gray-400 hover:bg-gray-800 hover:text-white"
+          )}
+        >
+          <LayoutDashboard className="w-5 h-5 mr-3" />
+          Dashboard
+        </Link>
+
+        {/* Chats */}
+        <Link
+          href="/dashboard/chats"
+          className={cn(
+            "flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+            pathname.startsWith("/dashboard/chats")
+              ? "bg-gray-800 text-white"
+              : "text-gray-400 hover:bg-gray-800 hover:text-white"
+          )}
+        >
+          <MessageSquare className="w-5 h-5 mr-3" />
+          Chats
+        </Link>
+
+        {/* Leads */}
+        <Link
+          href="/dashboard/leads"
+          className={cn(
+            "flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+            pathname.startsWith("/dashboard/leads")
+              ? "bg-gray-800 text-white"
+              : "text-gray-400 hover:bg-gray-800 hover:text-white"
+          )}
+        >
+          <Target className="w-5 h-5 mr-3" />
+          Leads
+        </Link>
+
+        {/* Team */}
+        <Link
+          href="/dashboard/team"
+          className={cn(
+            "flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+            pathname.startsWith("/dashboard/team")
+              ? "bg-gray-800 text-white"
+              : "text-gray-400 hover:bg-gray-800 hover:text-white"
+          )}
+        >
+          <Users className="w-5 h-5 mr-3" />
+          Team
+        </Link>
 
         {/* Admin Link - nur für Super-Admins */}
         {isSuperAdmin && (

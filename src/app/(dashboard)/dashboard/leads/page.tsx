@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { leads, teamMembers, chats } from "@/lib/schema";
 import { eq, desc } from "drizzle-orm";
 import LeadsTable from "./LeadsTable";
+import { SetPageTitle } from "@/components/SetPageTitle";
 
 export default async function LeadsPage() {
   const session = await auth();
@@ -50,22 +51,9 @@ export default async function LeadsPage() {
   }));
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Leads</h1>
-          <p className="text-gray-500 mt-1">
-            Verwalte deine gesammelten Kontakte
-          </p>
-        </div>
-      </div>
-
-      {/* Leads Table */}
-      <LeadsTable
-        leads={enrichedLeads}
-        chats={teamChats}
-      />
-    </div>
+    <>
+      <SetPageTitle title="Leads" subtitle="Verwalte deine gesammelten Kontakte" />
+      <LeadsTable leads={enrichedLeads} chats={teamChats} />
+    </>
   );
 }

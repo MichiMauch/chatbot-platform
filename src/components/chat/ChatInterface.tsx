@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Calendar } from "lucide-react";
+import { Send, Bot, User, Calendar, ThumbsUp, ThumbsDown } from "lucide-react";
 import { nanoid } from "nanoid";
 import dynamic from "next/dynamic";
 import { useTypewriter } from "@/hooks/useTypewriter";
@@ -103,6 +103,7 @@ interface Chat {
 
 interface ChatInterfaceProps {
   chat: Chat;
+  isEmbed?: boolean;
 }
 
 // Get visitor ID from localStorage
@@ -179,7 +180,7 @@ function getLogoPath(logoId: string | null | undefined): string | null {
   return logo?.path ?? null;
 }
 
-export default function ChatInterface({ chat }: ChatInterfaceProps) {
+export default function ChatInterface({ chat, isEmbed = false }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -202,6 +203,12 @@ export default function ChatInterface({ chat }: ChatInterfaceProps) {
   const [showNotFoundForm, setShowNotFoundForm] = useState(false);
   const [pendingNotFoundForm, setPendingNotFoundForm] = useState(false);
   const [notFoundQuestion, setNotFoundQuestion] = useState("");
+
+  // Feedback state: maps messageId to feedback value (-1, 0, 1)
+  const [messageFeedback, setMessageFeedback] = useState<Record<string, number>>({});
+
+  // Session start time for time-based newsletter trigger
+  const [sessionStartTime] = useState<number>(() => Date.now());
 
   const logoPath = getLogoPath(chat.chatLogo);
 
@@ -288,68 +295,42 @@ export default function ChatInterface({ chat }: ChatInterfaceProps) {
     setContactFormSubmitted(sessionStorage.getItem(submittedKey) === "true");
   }, [chat.id]);
 
-  // Trigger contact form in chat after X bot responses (after animation completes)
+  // Load feedback from localStorage (persists across sessions)
   useEffect(() => {
-    if (
-      chat.leadCaptureEnabled &&
-      chat.leadCaptureTrigger &&
-      chat.leadCaptureTrigger !== "exit" &&
-      !contactFormSubmitted &&
-      !showContactFormInChat &&
-      !showCalendarMessage && // Don't show if calendar message is active
-      !showNotFoundForm && // Don't show if "not found" form is active
-      !pendingNotFoundForm // Don't show if "not found" form is pending
-    ) {
-      const triggerCount = parseInt(chat.leadCaptureTrigger, 10);
-      const lastMessage = messages[messages.length - 1];
-
-      // Only show after the last bot message animation is complete
-      if (
-        botMessageCount >= triggerCount &&
-        lastMessage?.role === "assistant" &&
-        lastMessage?.isNew === false
-      ) {
-        setShowContactFormInChat(true);
+    const feedbackKey = `chat-feedback-${chat.id}`;
+    const stored = localStorage.getItem(feedbackKey);
+    if (stored) {
+      try {
+        setMessageFeedback(JSON.parse(stored));
+      } catch (error) {
+        console.error("Error loading feedback:", error);
       }
     }
-  }, [
-    chat.leadCaptureEnabled,
-    chat.leadCaptureTrigger,
-    botMessageCount,
-    contactFormSubmitted,
-    showContactFormInChat,
-    showCalendarMessage,
-    showNotFoundForm,
-    pendingNotFoundForm,
-    messages,
-  ]);
+  }, [chat.id]);
 
-  // Exit intent trigger for contact form
-  useEffect(() => {
-    if (
-      chat.leadCaptureEnabled &&
-      chat.leadCaptureTrigger === "exit" &&
-      !contactFormSubmitted &&
-      !showContactFormInChat &&
-      messages.length > 0
-    ) {
-      function handleMouseLeave(e: MouseEvent) {
-        // Only trigger when mouse leaves through the top of the viewport
-        if (e.clientY <= 0) {
-          setShowContactFormInChat(true);
-        }
-      }
+  // Handle feedback submission
+  const handleFeedback = async (messageId: string | undefined, feedback: number) => {
+    if (!messageId) return;
 
-      document.addEventListener("mouseleave", handleMouseLeave);
-      return () => document.removeEventListener("mouseleave", handleMouseLeave);
+    // Optimistically update state
+    const newFeedback = { ...messageFeedback, [messageId]: feedback };
+    setMessageFeedback(newFeedback);
+
+    // Save to localStorage
+    const feedbackKey = `chat-feedback-${chat.id}`;
+    localStorage.setItem(feedbackKey, JSON.stringify(newFeedback));
+
+    // Send to API
+    try {
+      await fetch(`/api/messages/${messageId}/feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ feedback }),
+      });
+    } catch (error) {
+      console.error("Error submitting feedback:", error);
     }
-  }, [
-    chat.leadCaptureEnabled,
-    chat.leadCaptureTrigger,
-    contactFormSubmitted,
-    showContactFormInChat,
-    messages.length,
-  ]);
+  };
 
   // Check newsletter submitted state from sessionStorage
   useEffect(() => {
@@ -357,34 +338,38 @@ export default function ChatInterface({ chat }: ChatInterfaceProps) {
     setNewsletterSubmitted(sessionStorage.getItem(submittedKey) === "true");
   }, [chat.id]);
 
-  // Trigger newsletter in chat after X bot responses (after animation completes)
+  // Trigger newsletter after 2+ minutes in session (on next bot response)
   useEffect(() => {
     if (
       chat.newsletterEnabled &&
-      chat.newsletterTrigger &&
-      chat.newsletterTrigger !== "exit" &&
       !newsletterSubmitted &&
       !showNewsletterInChat
     ) {
-      const triggerCount = parseInt(chat.newsletterTrigger, 10);
       const lastMessage = messages[messages.length - 1];
 
-      // Only show after the last bot message animation is complete
+      // Check: animation complete + 2+ minutes passed since session start
       if (
-        botMessageCount >= triggerCount &&
         lastMessage?.role === "assistant" &&
         lastMessage?.isNew === false
       ) {
-        setShowNewsletterInChat(true);
+        const minutesInSession = (Date.now() - sessionStartTime) / 60000;
+
+        if (minutesInSession >= 2) {
+          const alreadyShown = sessionStorage.getItem(`newsletter-form-shown-${chat.id}`) === "true";
+          if (!alreadyShown) {
+            setShowNewsletterInChat(true);
+            sessionStorage.setItem(`newsletter-form-shown-${chat.id}`, "true");
+          }
+        }
       }
     }
   }, [
     chat.newsletterEnabled,
-    chat.newsletterTrigger,
-    botMessageCount,
+    chat.id,
     newsletterSubmitted,
     showNewsletterInChat,
     messages,
+    sessionStartTime,
   ]);
 
   // Exit intent trigger for newsletter
@@ -397,9 +382,13 @@ export default function ChatInterface({ chat }: ChatInterfaceProps) {
       messages.length > 0
     ) {
       function handleMouseLeave(e: MouseEvent) {
-        // Only trigger when mouse leaves through the top of the viewport
         if (e.clientY <= 0) {
-          setShowNewsletterInChat(true);
+          // Final guard: check sessionStorage right before showing
+          const alreadyShown = sessionStorage.getItem(`newsletter-form-shown-${chat.id}`) === "true";
+          if (!alreadyShown) {
+            setShowNewsletterInChat(true);
+            sessionStorage.setItem(`newsletter-form-shown-${chat.id}`, "true");
+          }
         }
       }
 
@@ -409,6 +398,7 @@ export default function ChatInterface({ chat }: ChatInterfaceProps) {
   }, [
     chat.newsletterEnabled,
     chat.newsletterTrigger,
+    chat.id,
     newsletterSubmitted,
     showNewsletterInChat,
     messages.length,
@@ -769,6 +759,40 @@ export default function ChatInterface({ chat }: ChatInterfaceProps) {
                       sources={message.sources}
                       onDocumentClick={handleDocumentClick}
                     />
+                  )}
+
+                  {/* Feedback buttons for assistant messages */}
+                  {message.role === "assistant" && message.messageId && !message.isNew && (
+                    <div className="mt-2 pt-2 border-t border-gray-100 flex items-center gap-2">
+                      {messageFeedback[message.messageId] ? (
+                        <span className="text-xs text-gray-400 flex items-center gap-1">
+                          Danke für dein Feedback
+                          {messageFeedback[message.messageId] === 1 ? (
+                            <ThumbsUp className="w-3 h-3 text-green-500" />
+                          ) : (
+                            <ThumbsDown className="w-3 h-3 text-red-500" />
+                          )}
+                        </span>
+                      ) : (
+                        <>
+                          <span className="text-xs text-gray-400">War das hilfreich?</span>
+                          <button
+                            onClick={() => handleFeedback(message.messageId, 1)}
+                            className="p-1 rounded hover:bg-gray-100 transition-colors"
+                            title="Hilfreich"
+                          >
+                            <ThumbsUp className="w-4 h-4 text-gray-400 hover:text-green-500" />
+                          </button>
+                          <button
+                            onClick={() => handleFeedback(message.messageId, -1)}
+                            className="p-1 rounded hover:bg-gray-100 transition-colors"
+                            title="Nicht hilfreich"
+                          >
+                            <ThumbsDown className="w-4 h-4 text-gray-400 hover:text-red-500" />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>

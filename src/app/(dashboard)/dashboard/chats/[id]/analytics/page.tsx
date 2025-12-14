@@ -1,16 +1,15 @@
 import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { db } from "@/lib/db";
-import { chats, teamMembers, teams } from "@/lib/schema";
+import { chats, teamMembers } from "@/lib/schema";
 import { eq } from "drizzle-orm";
-import { AppearanceSettings } from "./AppearanceSettings";
-import { getPlan } from "@/lib/stripe";
+import { AnalyticsContent } from "./AnalyticsContent";
 
-interface ChatSettingsPageProps {
+interface ChatAnalyticsPageProps {
   params: Promise<{ id: string }>;
 }
 
-export default async function ChatSettingsPage({ params }: ChatSettingsPageProps) {
+export default async function ChatAnalyticsPage({ params }: ChatAnalyticsPageProps) {
   const { id } = await params;
   const session = await auth();
 
@@ -36,16 +35,7 @@ export default async function ChatSettingsPage({ params }: ChatSettingsPageProps
     notFound();
   }
 
-  // Load team to check plan
-  const team = await db.query.teams.findFirst({
-    where: eq(teams.id, chat.teamId),
-  });
-
-  const plan = getPlan(team?.plan || "free");
-  const allowPublicChats = plan.limits.allowPublicChats;
-  const allowEmbed = plan.limits.allowEmbed;
-
   return (
-    <AppearanceSettings chat={chat} allowPublicChats={allowPublicChats} allowEmbed={allowEmbed} />
+    <AnalyticsContent chatId={chat.id} />
   );
 }

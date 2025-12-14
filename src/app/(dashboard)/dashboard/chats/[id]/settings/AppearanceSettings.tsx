@@ -1,21 +1,48 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Save, Check, TrendingUp, Plus, X, MessageCircleQuestion, MessageSquare, Bot, Users, Calendar, Mail } from "lucide-react";
+import { useSettingsSave } from "@/contexts/SettingsSaveContext";
+import {
+  TextInput,
+  Textarea,
+  Switch,
+  Button,
+  Paper,
+  Text,
+  SimpleGrid,
+  Group,
+  Stack,
+  ColorSwatch,
+  CheckIcon,
+  Alert,
+  Code,
+  CopyButton,
+  ActionIcon,
+  Tooltip,
+  Box,
+  Anchor,
+} from "@mantine/core";
+import {
+  IconDeviceFloppy,
+  IconPlus,
+  IconX,
+  IconAlertTriangle,
+  IconCheck,
+  IconCopy,
+} from "@tabler/icons-react";
+import { Bot, Calendar, Mail, Users, Code as CodeIcon, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { themeColors, type ThemeColor } from "@/lib/systemInstructionTemplates";
 import { chatLogos, type ChatLogoId } from "@/lib/chatLogos";
 
-// Dynamic import for LottieLoader to avoid SSR issues
 const LottieLoader = dynamic(() => import("@/components/LottieLoader"), { ssr: false });
 
 interface Chat {
   id: string;
+  name: string;
   displayName: string;
   description: string | null;
   themeColor: string | null;
@@ -26,27 +53,29 @@ interface Chat {
   chatLogo: string | null;
   leadCaptureEnabled: boolean | null;
   leadCaptureTrigger: string | null;
+  calendarEnabled: boolean | null;
   calendarLink: string | null;
   newsletterEnabled: boolean | null;
   newsletterTrigger: string | null;
+  widgetEnabled: boolean | null;
+  embedEnabled: boolean | null;
+  widgetBubbleText: string | null;
 }
 
 interface AppearanceSettingsProps {
   chat: Chat;
   allowPublicChats?: boolean;
+  allowEmbed?: boolean;
 }
 
-export function AppearanceSettings({ chat, allowPublicChats = true }: AppearanceSettingsProps) {
+export function AppearanceSettings({ chat, allowPublicChats = true, allowEmbed = false }: AppearanceSettingsProps) {
   const router = useRouter();
+  const { setSaveButton } = useSettingsSave();
   const [isSaving, setIsSaving] = useState(false);
 
   const [displayName, setDisplayName] = useState(chat.displayName);
   const [description, setDescription] = useState(chat.description || "");
-  const [themeColor, setThemeColor] = useState<ThemeColor>(
-    (chat.themeColor as ThemeColor) || "blue"
-  );
-  const [isPublic, setIsPublic] = useState(chat.isPublic ?? true);
-  const [allowAnonymous, setAllowAnonymous] = useState(chat.allowAnonymous ?? true);
+  const [themeColor, setThemeColor] = useState<ThemeColor>((chat.themeColor as ThemeColor) || "blue");
   const [starterQuestions, setStarterQuestions] = useState<string[]>(() => {
     if (!chat.starterQuestions) return [];
     try {
@@ -57,16 +86,21 @@ export function AppearanceSettings({ chat, allowPublicChats = true }: Appearance
     }
   });
   const [welcomeMessage, setWelcomeMessage] = useState(chat.welcomeMessage || "");
-  const [chatLogo, setChatLogo] = useState<ChatLogoId>(
-    (chat.chatLogo as ChatLogoId) || "default"
-  );
+  const [chatLogo, setChatLogo] = useState<ChatLogoId>((chat.chatLogo as ChatLogoId) || "default");
   const [leadCaptureEnabled, setLeadCaptureEnabled] = useState(chat.leadCaptureEnabled ?? false);
-  const [leadCaptureTrigger, setLeadCaptureTrigger] = useState(chat.leadCaptureTrigger || "5");
+  const [calendarEnabled, setCalendarEnabled] = useState(chat.calendarEnabled ?? false);
   const [calendarLink, setCalendarLink] = useState(chat.calendarLink || "");
   const [newsletterEnabled, setNewsletterEnabled] = useState(chat.newsletterEnabled ?? false);
-  const [newsletterTrigger, setNewsletterTrigger] = useState(chat.newsletterTrigger || "5");
+  const [widgetEnabled, setWidgetEnabled] = useState(chat.widgetEnabled ?? false);
+  const [embedEnabled, setEmbedEnabled] = useState(chat.embedEnabled ?? false);
+  const [widgetBubbleText, setWidgetBubbleText] = useState(chat.widgetBubbleText || "");
+  const [baseUrl, setBaseUrl] = useState("");
 
-  const handleSave = async () => {
+  useEffect(() => {
+    setBaseUrl(window.location.origin);
+  }, []);
+
+  const handleSave = useCallback(async () => {
     setIsSaving(true);
     try {
       const response = await fetch(`/api/chats/${chat.id}`, {
@@ -76,18 +110,18 @@ export function AppearanceSettings({ chat, allowPublicChats = true }: Appearance
           displayName,
           description,
           themeColor,
-          isPublic,
-          allowAnonymous,
           starterQuestions: starterQuestions.filter(q => q.trim()).length > 0
             ? JSON.stringify(starterQuestions.filter(q => q.trim()))
             : null,
           welcomeMessage: welcomeMessage.trim() || null,
           chatLogo,
           leadCaptureEnabled,
-          leadCaptureTrigger: leadCaptureEnabled ? leadCaptureTrigger : null,
+          calendarEnabled,
           calendarLink: calendarLink.trim() || null,
           newsletterEnabled,
-          newsletterTrigger: newsletterEnabled ? newsletterTrigger : null,
+          widgetEnabled,
+          embedEnabled,
+          widgetBubbleText: widgetBubbleText.trim() || null,
         }),
       });
 
@@ -104,403 +138,302 @@ export function AppearanceSettings({ chat, allowPublicChats = true }: Appearance
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [chat.id, displayName, description, themeColor, starterQuestions, welcomeMessage, chatLogo, leadCaptureEnabled, calendarEnabled, calendarLink, newsletterEnabled, widgetEnabled, embedEnabled, widgetBubbleText, router]);
 
-  const addStarterQuestion = () => {
-    if (starterQuestions.length < 4) {
-      setStarterQuestions([...starterQuestions, ""]);
+  // Set save button in context for ChatTabs
+  useEffect(() => {
+    setSaveButton(
+      <Button
+        leftSection={<IconDeviceFloppy size={16} />}
+        loading={isSaving}
+        onClick={handleSave}
+      >
+        Speichern
+      </Button>
+    );
+    return () => setSaveButton(null);
+  }, [isSaving, handleSave, setSaveButton]);
+
+  const logoPath = chatLogo && chatLogo !== "default"
+    ? chatLogos.find(l => l.id === chatLogo)?.path
+    : null;
+
+  const buildWidgetCode = () => {
+    let attrs = `data-chat-id="${chat.id}"`;
+    if (widgetBubbleText.trim()) {
+      attrs += ` data-bubble-text="${widgetBubbleText.trim().replace(/"/g, '&quot;')}"`;
     }
+    if (logoPath) {
+      attrs += ` data-logo="${logoPath}"`;
+    }
+    return `<script src="${baseUrl}/widget.js" ${attrs}></script>`;
   };
 
-  const updateStarterQuestion = (index: number, value: string) => {
-    const updated = [...starterQuestions];
-    updated[index] = value;
-    setStarterQuestions(updated);
-  };
-
-  const removeStarterQuestion = (index: number) => {
-    setStarterQuestions(starterQuestions.filter((_, i) => i !== index));
-  };
+  const widgetCode = buildWidgetCode();
+  const embedCode = `<iframe src="${baseUrl}/embed/${chat.id}" width="100%" height="600" style="border:none;border-radius:12px;"></iframe>`;
 
   return (
-    <div className="space-y-8">
-      {/* Basis-Einstellungen */}
-      <section className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Allgemein
-        </h2>
-        <div className="space-y-4">
-          <Input
+    <Stack gap="md">
+      {/* Allgemein */}
+      <Paper p="sm" withBorder>
+        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
+          <TextInput
+            id="chat-display-name"
             label="Anzeigename"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             placeholder="Mein Chatbot"
+            size="sm"
           />
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Beschreibung
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Beschreibe, wofür dieser Chatbot verwendet wird..."
-              rows={2}
-              className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-        </div>
-      </section>
+          <Textarea
+            id="chat-description"
+            label="Beschreibung"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Wofür wird dieser Chatbot verwendet?"
+            size="sm"
+            minRows={1}
+            autosize
+          />
+        </SimpleGrid>
+      </Paper>
 
-      {/* Farbthema */}
-      <section className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Farbthema
-        </h2>
-        <div className="flex gap-3">
-          {themeColors.map((theme) => (
-            <button
-              key={theme.id}
-              onClick={() => setThemeColor(theme.id)}
-              className={`relative w-12 h-12 rounded-full transition-transform hover:scale-110 ${
-                themeColor === theme.id ? "ring-2 ring-offset-2 ring-gray-400" : ""
-              }`}
-              style={{ backgroundColor: theme.color }}
-              title={theme.name}
-            >
-              {themeColor === theme.id && (
-                <Check className="absolute inset-0 m-auto w-6 h-6 text-white" />
-              )}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* Chat-Logo */}
-      <section className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Chat-Logo
-        </h2>
-        <p className="text-sm text-gray-500 mb-4">
-          Wähle ein animiertes Logo für deinen Chatbot.
-        </p>
-        <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
-          {chatLogos.map((logo) => (
-            <button
-              key={logo.id}
-              onClick={() => setChatLogo(logo.id)}
-              className={`relative aspect-square rounded-xl border-2 transition-all hover:scale-105 flex items-center justify-center bg-gray-50 ${
-                chatLogo === logo.id
-                  ? "border-blue-500 ring-2 ring-blue-500"
-                  : "border-gray-200 hover:border-gray-300"
-              }`}
-              title={logo.name}
-            >
-              {logo.path ? (
-                <div className="w-12 h-12">
-                  <LottieLoader
-                    path={logo.path}
-                    loop
-                    autoplay
-                    style={{ width: "100%", height: "100%" }}
-                  />
-                </div>
-              ) : (
-                <Bot className="w-8 h-8 text-gray-400" />
-              )}
-              {chatLogo === logo.id && (
-                <div className="absolute top-1 right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                  <Check className="w-3 h-3 text-white" />
-                </div>
-              )}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* Startfragen */}
-      <section className="bg-white rounded-xl border border-gray-200 p-6">
-        <div className="flex items-center space-x-2 mb-4">
-          <MessageCircleQuestion className="w-5 h-5 text-gray-400" />
-          <h2 className="text-lg font-semibold text-gray-900">
-            Startfragen
-          </h2>
-        </div>
-        <p className="text-sm text-gray-500 mb-4">
-          Diese Fragen werden angezeigt, wenn der Chat geöffnet wird. Benutzer können darauf klicken, um schnell loszulegen.
-        </p>
-
-        <div className="space-y-3">
-          {starterQuestions.map((question, index) => (
-            <div key={index} className="flex items-center gap-2">
-              <input
-                type="text"
-                value={question}
-                onChange={(e) => updateStarterQuestion(index, e.target.value)}
-                placeholder={`Frage ${index + 1}, z.B. "Was sind eure Öffnungszeiten?"`}
-                className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-              <button
-                type="button"
-                onClick={() => removeStarterQuestion(index)}
-                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+      {/* Farbe + Logo */}
+      <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
+        <Paper p="sm" withBorder>
+          <Text size="sm" fw={500} mb="xs">Farbthema</Text>
+          <Group gap="xs">
+            {themeColors.map((theme) => (
+              <ColorSwatch
+                key={theme.id}
+                color={theme.color}
+                onClick={() => setThemeColor(theme.id)}
+                style={{ cursor: "pointer" }}
+                size={32}
               >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          ))}
-        </div>
+                {themeColor === theme.id && <CheckIcon style={{ width: 14, height: 14, color: "white" }} />}
+              </ColorSwatch>
+            ))}
+          </Group>
+        </Paper>
 
-        {starterQuestions.length < 4 && (
-          <button
-            type="button"
-            onClick={addStarterQuestion}
-            className="mt-3 inline-flex items-center px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <Plus className="w-4 h-4 mr-1.5" />
-            Frage hinzufügen
-          </button>
-        )}
-
-        {starterQuestions.length >= 4 && (
-          <p className="mt-3 text-sm text-gray-500">
-            Maximal 4 Startfragen möglich
-          </p>
-        )}
-      </section>
-
-      {/* Begrüssungsnachricht */}
-      <section className="bg-white rounded-xl border border-gray-200 p-6">
-        <div className="flex items-center space-x-2 mb-4">
-          <MessageSquare className="w-5 h-5 text-gray-400" />
-          <h2 className="text-lg font-semibold text-gray-900">
-            Begrüssungsnachricht
-          </h2>
-        </div>
-        <p className="text-sm text-gray-500 mb-4">
-          Diese Nachricht wird als erste Bot-Nachricht angezeigt, wenn der Chat geöffnet wird.
-        </p>
-        <textarea
-          value={welcomeMessage}
-          onChange={(e) => setWelcomeMessage(e.target.value)}
-          placeholder="z.B. Hallo! Ich bin dein persönlicher Assistent. Wie kann ich dir heute helfen?"
-          rows={3}
-          className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-        />
-      </section>
-
-      {/* Lead-Generierung */}
-      <section className="bg-white rounded-xl border border-gray-200 p-6">
-        <div className="flex items-center space-x-2 mb-4">
-          <Users className="w-5 h-5 text-gray-400" />
-          <h2 className="text-lg font-semibold text-gray-900">
-            Lead-Generierung
-          </h2>
-        </div>
-        <p className="text-sm text-gray-500 mb-4">
-          Sammle Kontaktdaten von interessierten Besuchern.
-        </p>
-
-        <div className="space-y-6">
-          {/* Lead Capture Toggle */}
-          <label className="flex items-center justify-between">
-            <div>
-              <span className="font-medium text-gray-900">Kontaktformular</span>
-              <p className="text-sm text-gray-500">
-                Zeige ein Kontaktformular nach einigen Nachrichten
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setLeadCaptureEnabled(!leadCaptureEnabled)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                leadCaptureEnabled ? "bg-blue-600" : "bg-gray-200"
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  leadCaptureEnabled ? "translate-x-6" : "translate-x-1"
-                }`}
-              />
-            </button>
-          </label>
-
-          {/* Contact Form Trigger */}
-          {leadCaptureEnabled && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Wann soll das Kontaktformular erscheinen?
-              </label>
-              <select
-                value={leadCaptureTrigger}
-                onChange={(e) => setLeadCaptureTrigger(e.target.value)}
-                className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        <Paper p="sm" withBorder>
+          <Text size="sm" fw={500} mb="xs">Chat-Logo</Text>
+          <Group gap={4}>
+            {chatLogos.map((logo) => (
+              <Box
+                key={logo.id}
+                onClick={() => setChatLogo(logo.id)}
+                style={{
+                  cursor: "pointer",
+                  padding: 4,
+                  borderRadius: 8,
+                  border: chatLogo === logo.id ? "2px solid var(--mantine-color-cyan-6)" : "2px solid transparent",
+                  background: chatLogo === logo.id ? "var(--mantine-color-cyan-0)" : "transparent",
+                }}
               >
-                <option value="2">Nach 2 Antworten</option>
-                <option value="5">Nach 5 Antworten</option>
-                <option value="10">Nach 10 Antworten</option>
-                <option value="exit">Beim Verlassen der Seite</option>
-              </select>
-              <p className="mt-1 text-xs text-gray-500">
-                Das Formular erscheint als Chat-Nachricht im Verlauf
-              </p>
-            </div>
-          )}
+                {logo.path ? (
+                  <div style={{ width: 32, height: 32 }}>
+                    <LottieLoader path={logo.path} loop autoplay style={{ width: "100%", height: "100%" }} />
+                  </div>
+                ) : (
+                  <Bot size={32} color="gray" />
+                )}
+              </Box>
+            ))}
+          </Group>
+        </Paper>
+      </SimpleGrid>
 
-          {/* Calendar Link */}
-          <div>
-            <div className="flex items-center space-x-2 mb-2">
-              <Calendar className="w-4 h-4 text-gray-400" />
-              <label className="block text-sm font-medium text-gray-700">
-                Kalender-Link (optional)
-              </label>
-            </div>
-            <input
-              type="url"
-              value={calendarLink}
-              onChange={(e) => setCalendarLink(e.target.value)}
-              placeholder="https://calendar.app.google/..."
-              className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-            <p className="mt-1 text-xs text-gray-500">
-              Zeigt einen &quot;Termin buchen&quot; Button im Chat
-            </p>
-          </div>
+      {/* Begrüssung + Startfragen */}
+      <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
+        <Paper p="sm" withBorder>
+          <Textarea
+            id="chat-welcome-message"
+            label="Begrüssungsnachricht"
+            value={welcomeMessage}
+            onChange={(e) => setWelcomeMessage(e.target.value)}
+            placeholder="Hallo! Wie kann ich helfen?"
+            size="sm"
+            minRows={2}
+            autosize
+          />
+        </Paper>
 
-          {/* Newsletter Toggle */}
-          <label className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Mail className="w-4 h-4 text-gray-400" />
-              <div>
-                <span className="font-medium text-gray-900">Newsletter</span>
-                <p className="text-sm text-gray-500">
-                  Email-Anmeldung im Chat anbieten
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setNewsletterEnabled(!newsletterEnabled)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                newsletterEnabled ? "bg-blue-600" : "bg-gray-200"
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  newsletterEnabled ? "translate-x-6" : "translate-x-1"
-                }`}
-              />
-            </button>
-          </label>
-
-          {/* Newsletter Trigger */}
-          {newsletterEnabled && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Wann soll das Newsletter-Formular erscheinen?
-              </label>
-              <select
-                value={newsletterTrigger}
-                onChange={(e) => setNewsletterTrigger(e.target.value)}
-                className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        <Paper p="sm" withBorder>
+          <Group justify="space-between" mb="xs">
+            <Text size="sm" fw={500}>Startfragen (max. 4)</Text>
+            {starterQuestions.length < 4 && (
+              <Button
+                variant="subtle"
+                size="compact-xs"
+                leftSection={<IconPlus size={14} />}
+                onClick={() => setStarterQuestions([...starterQuestions, ""])}
               >
-                <option value="2">Nach 2 Antworten</option>
-                <option value="5">Nach 5 Antworten</option>
-                <option value="10">Nach 10 Antworten</option>
-                <option value="exit">Beim Verlassen der Seite</option>
-              </select>
-              <p className="mt-1 text-xs text-gray-500">
-                Das Formular erscheint als Chat-Nachricht im Verlauf
-              </p>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Zugriff */}
-      <section className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Zugriff
-        </h2>
-
-        {/* Free plan hint */}
-        {!allowPublicChats && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
-            <div className="flex items-start space-x-3">
-              <TrendingUp className="w-5 h-5 text-amber-600 mt-0.5" />
-              <div>
-                <p className="text-sm text-amber-800 font-medium">
-                  Öffentliche Chats sind im Free Plan nicht verfügbar
-                </p>
-                <p className="text-sm text-amber-700 mt-1">
-                  Upgrade deinen Plan, um Chats öffentlich zugänglich zu machen.
-                </p>
-                <Link
-                  href="/dashboard/billing"
-                  className="inline-flex items-center text-sm text-amber-800 font-medium mt-2 hover:underline"
+                Hinzufügen
+              </Button>
+            )}
+          </Group>
+          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="xs">
+            {starterQuestions.map((q, i) => (
+              <Group key={i} gap="xs" wrap="nowrap">
+                <TextInput
+                  id={`starter-question-${i}`}
+                  size="xs"
+                  style={{ flex: 1 }}
+                  value={q}
+                  onChange={(e) => {
+                    const updated = [...starterQuestions];
+                    updated[i] = e.target.value;
+                    setStarterQuestions(updated);
+                  }}
+                  placeholder={`Frage ${i + 1}`}
+                />
+                <ActionIcon
+                  variant="subtle"
+                  color="red"
+                  size="sm"
+                  onClick={() => setStarterQuestions(starterQuestions.filter((_, idx) => idx !== i))}
                 >
-                  Jetzt upgraden
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
+                  <IconX size={14} />
+                </ActionIcon>
+              </Group>
+            ))}
+          </SimpleGrid>
+        </Paper>
+      </SimpleGrid>
 
-        <div className="space-y-4">
-          <label className={`flex items-center justify-between ${!allowPublicChats ? "opacity-50" : ""}`}>
-            <div>
-              <span className="font-medium text-gray-900">Öffentlich</span>
-              <p className="text-sm text-gray-500">
-                Chat ist über die öffentliche URL erreichbar
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => allowPublicChats && setIsPublic(!isPublic)}
-              disabled={!allowPublicChats}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                isPublic ? "bg-blue-600" : "bg-gray-200"
-              } ${!allowPublicChats ? "cursor-not-allowed" : ""}`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  isPublic ? "translate-x-6" : "translate-x-1"
-                }`}
+      {/* Einbettung + Lead-Generierung */}
+      <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
+        <Paper p="sm" withBorder>
+          <Group gap="xs" mb="sm">
+            <CodeIcon size={16} />
+            <Text size="sm" fw={500}>Website-Einbettung</Text>
+          </Group>
+
+          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
+            <Stack gap="xs">
+              <Switch
+                id="widget-enabled"
+                size="sm"
+                label="Chat-Widget"
+                description="Schwebendes Chat-Symbol"
+                checked={widgetEnabled}
+                onChange={(e) => setWidgetEnabled(e.currentTarget.checked)}
               />
-            </button>
-          </label>
+              {widgetEnabled && (
+                <>
+                  <TextInput
+                    id="widget-bubble-text"
+                    size="xs"
+                    label="Sprechblasen-Text"
+                    value={widgetBubbleText}
+                    onChange={(e) => setWidgetBubbleText(e.target.value)}
+                    placeholder="Wie kann ich helfen?"
+                    maxLength={150}
+                  />
+                  {allowEmbed ? (
+                    <Group gap="xs">
+                      <Code block style={{ flex: 1, fontSize: 10 }}>{widgetCode}</Code>
+                      <CopyButton value={widgetCode}>
+                        {({ copied, copy }) => (
+                          <Tooltip label={copied ? "Kopiert!" : "Kopieren"}>
+                            <ActionIcon color={copied ? "teal" : "gray"} onClick={copy} variant="subtle">
+                              {copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
+                            </ActionIcon>
+                          </Tooltip>
+                        )}
+                      </CopyButton>
+                    </Group>
+                  ) : (
+                    <Text size="xs" c="dimmed">
+                      Embed-Code mit <Anchor component={Link} href="/dashboard/billing" size="xs">Upgrade</Anchor>
+                    </Text>
+                  )}
+                </>
+              )}
+            </Stack>
 
-          <label className={`flex items-center justify-between ${!allowPublicChats ? "opacity-50" : ""}`}>
-            <div>
-              <span className="font-medium text-gray-900">Anonyme Nutzer</span>
-              <p className="text-sm text-gray-500">
-                Nutzer können ohne Anmeldung chatten
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => allowPublicChats && setAllowAnonymous(!allowAnonymous)}
-              disabled={!allowPublicChats}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                allowAnonymous ? "bg-blue-600" : "bg-gray-200"
-              } ${!allowPublicChats ? "cursor-not-allowed" : ""}`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  allowAnonymous ? "translate-x-6" : "translate-x-1"
-                }`}
+            <Stack gap="xs">
+              {allowEmbed ? (
+                <>
+                  <Switch
+                    id="embed-enabled"
+                    size="sm"
+                    label="iFrame-Einbettung"
+                    description="Chat in Webseite einbetten"
+                    checked={embedEnabled}
+                    onChange={(e) => setEmbedEnabled(e.currentTarget.checked)}
+                  />
+                  {embedEnabled && (
+                    <Group gap="xs">
+                      <Code block style={{ flex: 1, fontSize: 10 }}>{embedCode}</Code>
+                      <CopyButton value={embedCode}>
+                        {({ copied, copy }) => (
+                          <Tooltip label={copied ? "Kopiert!" : "Kopieren"}>
+                            <ActionIcon color={copied ? "teal" : "gray"} onClick={copy} variant="subtle">
+                              {copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
+                            </ActionIcon>
+                          </Tooltip>
+                        )}
+                      </CopyButton>
+                    </Group>
+                  )}
+                </>
+              ) : (
+                <Alert icon={<IconAlertTriangle size={16} />} color="yellow" p="xs">
+                  <Text size="xs">
+                    iFrame nur mit <Anchor component={Link} href="/dashboard/billing" size="xs">Upgrade</Anchor>
+                  </Text>
+                </Alert>
+              )}
+            </Stack>
+          </SimpleGrid>
+        </Paper>
+
+        <Paper p="sm" withBorder>
+          <Group gap="xs" mb="sm">
+            <Users size={16} />
+            <Text size="sm" fw={500}>Lead-Generierung</Text>
+          </Group>
+          <Stack gap="xs">
+            <Switch
+              id="lead-capture-enabled"
+              size="sm"
+              label="Kontaktformular"
+              description="Bei fehlender Antwort"
+              checked={leadCaptureEnabled}
+              onChange={(e) => setLeadCaptureEnabled(e.currentTarget.checked)}
+            />
+            <Switch
+              id="newsletter-enabled"
+              size="sm"
+              label="Newsletter"
+              description="Nach 2 Min. Session"
+              checked={newsletterEnabled}
+              onChange={(e) => setNewsletterEnabled(e.currentTarget.checked)}
+            />
+            <Switch
+              id="calendar-enabled"
+              size="sm"
+              label="Termin"
+              description="Button oben im Chat + Widget bei Fragen nach Termin/Meeting"
+              checked={calendarEnabled}
+              onChange={(e) => setCalendarEnabled(e.currentTarget.checked)}
+            />
+            {calendarEnabled && (
+              <TextInput
+                id="calendar-link"
+                size="xs"
+                label={<Group gap={4}><Calendar size={12} /><span>Kalender-Link</span></Group>}
+                value={calendarLink}
+                onChange={(e) => setCalendarLink(e.target.value)}
+                placeholder="https://calendar.app.google/..."
               />
-            </button>
-          </label>
-        </div>
-      </section>
-
-      {/* Speichern-Button */}
-      <div className="flex justify-end">
-        <Button onClick={handleSave} isLoading={isSaving}>
-          <Save className="w-4 h-4 mr-2" />
-          Einstellungen speichern
-        </Button>
-      </div>
-    </div>
+            )}
+          </Stack>
+        </Paper>
+      </SimpleGrid>
+    </Stack>
   );
 }

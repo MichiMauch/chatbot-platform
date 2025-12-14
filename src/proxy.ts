@@ -16,6 +16,7 @@ const publicRoutes = [
   "/api/auth",
   "/c/", // Public chat view
   "/embed/", // Iframe embed
+  "/api/embed/", // Embed API
   "/invite/", // Team invitation links
 ];
 

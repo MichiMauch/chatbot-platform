@@ -1,8 +1,19 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, File, Trash2, Loader2 } from "lucide-react";
+import {
+  Paper,
+  Text,
+  Stack,
+  Group,
+  ActionIcon,
+  Loader,
+  Box,
+  rem,
+} from "@mantine/core";
+import { Dropzone, MIME_TYPES } from "@mantine/dropzone";
+import { IconUpload, IconFile, IconTrash, IconX } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
@@ -33,22 +44,8 @@ export function DocumentUpload({ chatId, initialFiles }: DocumentUploadProps) {
   const router = useRouter();
   const [files, setFiles] = useState<FileMetadata[]>(initialFiles);
   const [isUploading, setIsUploading] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<FileMetadata | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  // Dateien laden
-  const loadFiles = useCallback(async () => {
-    try {
-      const response = await fetch(`/api/chats/${chatId}/documents`);
-      if (response.ok) {
-        const data = await response.json();
-        setFiles(data.files || []);
-      }
-    } catch (error) {
-      console.error("Error loading files:", error);
-    }
-  }, [chatId]);
 
   // Datei hochladen
   const uploadFile = async (file: File) => {
@@ -107,122 +104,103 @@ export function DocumentUpload({ chatId, initialFiles }: DocumentUploadProps) {
     }
   };
 
-  // Drag & Drop Handlers
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-  }, []);
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      setIsDragging(false);
-
-      const droppedFiles = Array.from(e.dataTransfer.files);
-      if (droppedFiles.length > 0) {
-        uploadFile(droppedFiles[0]);
-      }
-    },
-    [chatId]
-  );
-
-  // File Input Handler
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = e.target.files;
-    if (selectedFiles && selectedFiles.length > 0) {
-      uploadFile(selectedFiles[0]);
+  // Handle file drop
+  const handleDrop = useCallback((acceptedFiles: File[]) => {
+    if (acceptedFiles.length > 0) {
+      uploadFile(acceptedFiles[0]);
     }
-    e.target.value = ""; // Reset input
-  };
+  }, [chatId]);
 
   return (
-    <section className="bg-white rounded-xl border border-gray-200 p-6">
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="text-lg font-semibold text-gray-900">
-          Dokumente
-        </h2>
+    <Paper p="md" withBorder>
+      <Group justify="space-between" mb="xs">
+        <Text size="lg" fw={600}>Dokumente</Text>
         {files.length > 0 && (
-          <span className="text-sm text-gray-500">
+          <Text size="sm" c="dimmed">
             {files.length} {files.length === 1 ? "Datei" : "Dateien"} · {formatFileSize(files.reduce((sum, f) => sum + (f.sizeBytes || 0), 0))}
-          </span>
+          </Text>
         )}
-      </div>
-      <p className="text-sm text-gray-500 mb-4">
+      </Group>
+      <Text size="sm" c="dimmed" mb="md">
         Lade Dokumente hoch, auf deren Basis der Chatbot antwortet (PDF, DOCX, TXT, etc.)
-      </p>
+      </Text>
 
       {/* Upload Zone */}
-      <div
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
+      <Dropzone
         onDrop={handleDrop}
-        className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
-          isDragging
-            ? "border-blue-500 bg-blue-50"
-            : "border-gray-300 hover:border-gray-400"
-        }`}
+        loading={isUploading}
+        accept={[
+          MIME_TYPES.pdf,
+          MIME_TYPES.doc,
+          MIME_TYPES.docx,
+          "text/plain",
+          "text/markdown",
+          MIME_TYPES.csv,
+          "application/json",
+        ]}
+        maxFiles={1}
+        multiple={false}
       >
-        <input
-          type="file"
-          onChange={handleFileSelect}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-          disabled={isUploading}
-          accept=".pdf,.doc,.docx,.txt,.md,.csv,.json"
-        />
+        <Group justify="center" gap="xl" mih={100} style={{ pointerEvents: "none" }}>
+          <Dropzone.Accept>
+            <IconUpload
+              style={{ width: rem(40), height: rem(40), color: "var(--mantine-color-blue-6)" }}
+              stroke={1.5}
+            />
+          </Dropzone.Accept>
+          <Dropzone.Reject>
+            <IconX
+              style={{ width: rem(40), height: rem(40), color: "var(--mantine-color-red-6)" }}
+              stroke={1.5}
+            />
+          </Dropzone.Reject>
+          <Dropzone.Idle>
+            <IconUpload
+              style={{ width: rem(40), height: rem(40), color: "var(--mantine-color-dimmed)" }}
+              stroke={1.5}
+            />
+          </Dropzone.Idle>
 
-        {isUploading ? (
-          <div className="flex flex-col items-center">
-            <Loader2 className="w-10 h-10 text-blue-500 animate-spin mb-3" />
-            <p className="text-gray-600">Wird hochgeladen...</p>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center">
-            <Upload className="w-10 h-10 text-gray-400 mb-3" />
-            <p className="text-gray-600 mb-1">
+          <div>
+            <Text size="sm" inline>
               Datei hierher ziehen oder klicken zum Auswählen
-            </p>
-            <p className="text-sm text-gray-400">
+            </Text>
+            <Text size="xs" c="dimmed" inline mt={7}>
               PDF, DOCX, TXT, MD, CSV, JSON
-            </p>
+            </Text>
           </div>
-        )}
-      </div>
+        </Group>
+      </Dropzone>
 
       {/* File List */}
       {files.length > 0 && (
-        <div className="mt-4 space-y-2">
+        <Stack gap="xs" mt="md">
           {files.map((file) => (
-            <div
-              key={file.documentName}
-              className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-            >
-              <div className="flex items-center gap-3">
-                <File className="w-5 h-5 text-gray-400" />
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    {file.displayName}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {new Date(file.uploadedAt).toLocaleDateString("de-CH")}
-                    {file.sizeBytes && ` · ${formatFileSize(file.sizeBytes)}`}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setDeleteTarget(file)}
-                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                title="Löschen"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
+            <Paper key={file.documentName} p="sm" bg="gray.0" radius="md">
+              <Group justify="space-between" wrap="nowrap">
+                <Group gap="sm" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
+                  <IconFile size={20} color="gray" />
+                  <Box style={{ flex: 1, minWidth: 0 }}>
+                    <Text size="sm" fw={500} truncate>
+                      {file.displayName}
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      {new Date(file.uploadedAt).toLocaleDateString("de-CH")}
+                      {file.sizeBytes && ` · ${formatFileSize(file.sizeBytes)}`}
+                    </Text>
+                  </Box>
+                </Group>
+                <ActionIcon
+                  variant="subtle"
+                  color="red"
+                  onClick={() => setDeleteTarget(file)}
+                >
+                  <IconTrash size={16} />
+                </ActionIcon>
+              </Group>
+            </Paper>
           ))}
-        </div>
+        </Stack>
       )}
 
       {/* Delete Confirmation */}
@@ -237,6 +215,6 @@ export function DocumentUpload({ chatId, initialFiles }: DocumentUploadProps) {
         variant="danger"
         isLoading={isDeleting}
       />
-    </section>
+    </Paper>
   );
 }
