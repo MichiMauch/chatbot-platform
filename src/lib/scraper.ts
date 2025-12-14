@@ -201,6 +201,8 @@ export async function parseSitemapRecursive(
 export async function launchBrowser(): Promise<Browser> {
   return await puppeteer.launch({
     headless: true,
+    // Use system Chromium in Docker, fallback to bundled in dev
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
